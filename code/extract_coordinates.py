@@ -1,50 +1,52 @@
 #!/usr/bin/env python
 # coding: utf-8
-
+import argparse
 import mediapipe as mp # Import mediapipe
 import cv2 # Import opencv
 import os
 import csv
 import numpy as np
+from tqdm import tqdm
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--show-video', action='store_true', default=False)
+parser.add_argument('--path2data', default=os.path.join('..', 'data', 'training_videos'))
+parser.add_argument('--path2output', default=os.path.join('..', 'output'))
+args = parser.parse_args()
 
 mp_drawing = mp.solutions.drawing_utils # Drawing helpers
-# mp_drawing_styles = mp.solutions.drawing_styles
 mp_holistic = mp.solutions.holistic # Mediapipe Solutions
+# mp_drawing_styles = mp.solutions.drawing_styles
+
 # mp_pose = mp.solutions.pose
 
 
-show=False
+coords_file = os.path.join(args.path2output, 'all_the_coords_face_hand.csv')
 
-data_file = os.path.join('..', '..', 'data', 'all_the_coords_face_hand.csv') # need to save the file in the data folder
-
-with open(data_file,mode='w', newline='') as f: 
-    csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-    # csv_writer.writerow(landmarks)
-
-
+with open(coords_file, mode='w', newline='') as f: 
+    csv_writer = csv.writer(f, delimiter=',', quotechar='"',
+                            quoting=csv.QUOTE_MINIMAL)
 
 classes = ['position_00','position_01','position_02',
           'position_03','position_04'] #put the names of the files here
 
-
 for label in classes:
     # Load Video
-    fn = label
+    fn_video = os.path.join(args.path2data, f'{label}.mp4')
     class_name = label[-2:] # only the number of the video
-    cap = cv2.VideoCapture(os.path.join('..', '..', 'data', 'training_videos', f'{fn}.mp4'))
-    cap.set(3,640)
-    cap.set(4,480)
+    cap = cv2.VideoCapture(fn_video)
+    cap.set(3,640) # camera width
+    cap.set(4,480) # camera height
     n_frames = int(cap. get(cv2. CAP_PROP_FRAME_COUNT))
-
+    pbar = tqdm(total=n_frames)
 
     # Initiate holistic model
-    i_frame = 0
+    # i_frame = 0
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
         while cap.isOpened():
             ret, frame = cap.read()
-            i_frame += 1
-            print(f'{i_frame}/{n_frames}')
+            # i_frame += 1
+            #print(f'{i_frame}/{n_frames}')
             if not ret:
                 break
             # Recolor Feed
@@ -59,7 +61,7 @@ for label in classes:
 
             
             # 4. Pose Detections
-            if show:
+            if args.show_video:
                 # Draw face landmarks
                 mp_drawing.draw_landmarks(image, results.face_landmarks, mp_holistic.FACEMESH_TESSELATION, 
                                          mp_drawing.DrawingSpec(color=(80,110,10), thickness=1, circle_radius=1),
@@ -76,22 +78,24 @@ for label in classes:
                                           mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=4),
                                           mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2)
                                           )
-
-
+                cv2.imshow('cued_estimated', image)
 
             # Export coordinates
             try:
                 # Extract Face landmarks
                 face = results.face_landmarks.landmark
-                face_row = list(np.array([[landmark.x, landmark.y, landmark.z, landmark.visibility] for landmark in face]).flatten())
+                face_row = list(np.array([[landmark.x, landmark.y, landmark.z,
+                                           landmark.visibility] for landmark in face]).flatten())
                
                # Extract right hand landmarks
                 r_hand = results.right_hand_landmarks.landmark
-                r_hand_row = list(np.array([[landmark.x, landmark.y, landmark.z, landmark.visibility] for landmark in r_hand]).flatten())
+                r_hand_row = list(np.array([[landmark.x, landmark.y, landmark.z,
+                                             landmark.visibility] for landmark in r_hand]).flatten())
 
                # Extract Pose landmarks
                 pose = results.pose_landmarks.landmark
-                pose_row = list(np.array([[landmark.x, landmark.y, landmark.z, landmark.visibility] for landmark in pose]).flatten())
+                pose_row = list(np.array([[landmark.x, landmark.y, landmark.z,
+                                           landmark.visibility] for landmark in pose]).flatten())
                 
                 #Create the row that will be written in the file
                 row = face_row+r_hand_row
@@ -100,19 +104,17 @@ for label in classes:
                 row.insert(0, class_name)
 
                 # Export to CSV
-                with open(data_file, mode='a', newline='') as f:
+                with open(coords_file, mode='a', newline='') as f:
                     csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                     csv_writer.writerow(row)
 
             except:
                 pass
 
-            if show:
-                cv2.imshow('cued_estimated', image)
 
             if cv2.waitKey(10) & 0xFF == ord('q'):
                 break
-
-    print(f'{label} was learned')
+            pbar.update(1)
+            
     cap.release()
     cv2.destroyAllWindows()
