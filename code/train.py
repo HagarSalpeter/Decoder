@@ -60,6 +60,6 @@ for algo, model in fit_models.items():
 
 
 # Put the trained model in a pkl file
-file_name = os.path.join('..', '..', 'data', 'training_features.csv')
-with open('trained_rf.pkl', 'wb') as f:
+file_name = os.path.join('trained_rf.pkl')
+with open(file_name, 'wb') as f:
     pickle.dump(fit_models['rf'], f)

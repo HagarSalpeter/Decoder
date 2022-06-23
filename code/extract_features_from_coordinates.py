@@ -10,33 +10,72 @@ import os
 import numpy as np
 
 # open csv with all the coords
-df = pd.read_csv(os.path.join('all_the_coords_face_hand.csv'))
+df1 = pd.read_csv(os.path.join('..', 'output', 'all_the_coords_positions.csv'))
+df2 = pd.read_csv(os.path.join('..', 'output', 'all_the_coords_shapes.csv'))
 
-coll_names = ['class']
-num_coords_face = 468
-num_coords_hand = 21
-num_coords_pose = 33
 
-# generate collomns names
-for val in range(0, num_coords_face):
-    coll_names += ['x_face{}'.format(val), 'y_face{}'.format(val), 'z_face{}'.format(val), 'v_face{}'.format(val)]
 
-for val in range(0, num_coords_hand):
-    coll_names += ['x_r_hand{}'.format(val), 'y_r_hand{}'.format(val), 'z_r_hand{}'.format(val), 'v_r_hand{}'.format(val)]
+df = pd.concat([df1,df2])
 
-#for val in range(0, num_coords_pose):
-#    coll_names += ['x_pose{}'.format(val), 'y_pose{}'.format(val), 'z_pose{}'.format(val), 'v_pose{}'.format(val)]
-
-df.columns = coll_names #change the coll names of the df
 
 #create the df of relevant feature
 
-df_features = df[['class','x_face0','y_face0','z_face0','v_face0','x_r_hand0','y_r_hand0','z_r_hand0','v_r_hand0']] #tack relevant cols - face0 is upper lip center, hand0 is the base of the hand
-df_features['d_x'] = df_features['x_face0'] - df_features['x_r_hand0'] # distance in x axis
-df_features['d_y'] = df_features['y_face0'] - df_features['y_r_hand0'] # distance in y axis
-df_features['d_z'] = df_features['z_face0'] - df_features['z_r_hand0'] # distance in z axis
-df_features['tan_alpha'] = df_features['d_y']/df_features['d_x'] # tan of alpha - the angle between the face center, hand and the horizontal axis
-df_features['distance_hand_face'] = np.sqrt((df_features['d_x'])**2 + (df_features['d_y'])**2 + (df_features['d_z'])**2) # the distance between the palm and the face
+df_features = df[['class',
+                  'x_face0','y_face0','z_face0',
+                  'x_face234','y_face234','z_face234',
+                  'x_face454','y_face454','z_face454',
+                  'x_r_hand0','y_r_hand0','z_r_hand0',
+                  'x_r_hand3','y_r_hand3','z_r_hand3',
+                  'x_r_hand4','y_r_hand4','z_r_hand4',
+                  'x_r_hand5','y_r_hand5','z_r_hand5',
+                  'x_r_hand6','y_r_hand6','z_r_hand6',
+                  'x_r_hand8','y_r_hand8','z_r_hand8',
+                  'x_r_hand9','y_r_hand9','z_r_hand9',
+                  'x_r_hand12','y_r_hand12','z_r_hand12',
+                  'x_r_hand13','y_r_hand13','z_r_hand13',
+                  'x_r_hand16','y_r_hand16','z_r_hand16',
+                  'x_r_hand17','y_r_hand17','z_r_hand17',
+                  'x_r_hand20','y_r_hand20','z_r_hand20'
+                  ]] #relevant cols
+
+def axis_distance(df_name,col1,col2):
+    return df_name[col1] - df_name[col2]
+
+def coords_distance(df_name,d_x,d_y,d_z):
+    return np.sqrt((df_name[d_x])**2 + (df_features[d_y])**2 + (df_features[d_z])**2)
+
+#face width to normalize the distance
+df_features['face_width_x'] = axis_distance(df_features,'x_face234','x_face454')
+df_features['face_width_y'] = axis_distance(df_features,'y_face234','y_face454')
+df_features['face_width_z'] = axis_distance(df_features,'z_face234','z_face454')
+df_features['face_width'] = coords_distance(df_features,'face_width_x','face_width_y','face_width_z')
+
+def normalized_axis_distance(df_name,col1,col2):
+    return (df_name[col1] - df_name[col2])/df_name['face_width']
+
+def normalized_coords_distance(df_name,d_x,d_y,d_z):
+    return (np.sqrt((df_name[d_x])**2 + (df_features[d_y])**2 + (df_features[d_z])**2))/df_name['face_width']
+
+#features for position    
+df_features['d_x_face0_r_hand0'] = normalized_axis_distance(df_features,'x_r_hand0','x_face0')
+df_features['d_y_face0_r_hand0'] = normalized_axis_distance(df_features,'y_r_hand0','x_face0')
+df_features['d_z_face0_r_hand0'] = normalized_axis_distance(df_features,'z_r_hand0','z_face0')
+df_features['distance_face0_r_hand0'] = normalized_coords_distance(df_features,'d_x_face0_r_hand0','d_y_face0_r_hand0','d_z_face0_r_hand0')
+df_features['tan_alpha_pose'] = df_features['d_y_face0_r_hand0']/df_features['d_x_face0_r_hand0'] # tan of alpha - the angle between the face center, hand and the horizontal axis
+
+#features for shape
+pairs = [('8','5'),('12','9'),('16','13'),('17','20'),('4','6'),('3','5'),('8','12')]
+features_pairs =[]
+names = ['x_r_hand','y_r_hand','z_r_hand']
+
+for pair in pairs:
+    for name in names:
+        features_pairs.append([name+pair[0], name+pair[1]])
+    
+    
+for i in features_pairs:
+    df_features[f'd_{i[0]}_{i[1]}'] = normalized_axis_distance(df_features,i[0],i[1])
+
 
 # extract the df to a csv file
-df_features.to_csv('training_features.csv')
+df_features.to_csv(os.path.join('..', 'output', 'training_features.csv'))

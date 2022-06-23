@@ -93,25 +93,34 @@ with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=
             row = face_row+r_hand_row
             
             # Name colls
-            num_coords = len(results.pose_landmarks.landmark)+len(results.face_landmarks.landmark)
-            col_name = []
-            for val in range(1, num_coords+1):
-                col_name += ['x{}'.format(val), 'y{}'.format(val), 'z{}'.format(val), 'v{}'.format(val)]
+            coll_names = []
+            num_coords_face = len(results.face_landmarks.landmark)
+            num_coords_hand = len(results.right_hand_landmarks.landmark)
+
+
+            # generate collomns names
+            for val in range(0, num_coords_face):
+                coll_names += ['x_face{}'.format(val), 'y_face{}'.format(val), 'z_face{}'.format(val), 'v_face{}'.format(val)]
+
+            for val in range(0, num_coords_hand):
+                coll_names += ['x_r_hand{}'.format(val), 'y_r_hand{}'.format(val), 'z_r_hand{}'.format(val), 'v_r_hand{}'.format(val)]
+            
+            
 
             # Make Detections
-            X = pd.DataFrame([row], columns = col_name)
+            X = pd.DataFrame([row], columns = coll_names)
             predicted_position = model.predict(X)[0]
             position_prob = model.predict_proba(X)[0]
             
-            
-            
+                        
             
             # Append prediction class and probability 
             row.insert(0, predicted_position)
             row.insert(1, position_prob)
             
             # Export to CSV
-            with open('position_estimation_by_frames.csv', mode='a', newline='') as f:
+            file_name = os.path.join('..', '..', 'data', 'position_estimation_by_frames.csv')
+            with open(file_name, mode='a', newline='') as f:
                 csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 csv_writer.writerow(row)
             

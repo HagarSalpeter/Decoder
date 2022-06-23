@@ -16,25 +16,43 @@ mp_holistic = mp.solutions.holistic # Mediapipe Solutions
 
 show=False
 
-data_file = os.path.join('..', '..', 'data', 'all_the_coords_face_hand.csv') # need to save the file in the data folder
+file = 'all_the_coords_shapes.csv'
+data_file = os.path.join('..', 'output', f'{file}') # need to save the file in the data folder
 
 with open(data_file,mode='w', newline='') as f: 
     csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     # csv_writer.writerow(landmarks)
 
+col_names = ['class']
+num_coords_face = 468
+num_coords_hand = 21
 
+# generate columns names
+for val in range(0, num_coords_face):
+    col_names += ['x_face{}'.format(val), 'y_face{}'.format(val), 'z_face{}'.format(val), 'v_face{}'.format(val)]
 
-classes = ['position_00','position_01','position_02',
-          'position_03','position_04'] #put the names of the files here
+for val in range(0, num_coords_hand):
+    col_names += ['x_r_hand{}'.format(val), 'y_r_hand{}'.format(val), 'z_r_hand{}'.format(val), 'v_r_hand{}'.format(val)]
+
+with open(data_file, mode='a', newline='') as f:
+    csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    csv_writer.writerow(col_names)
+    
+
+position = ['position_00','position_01','position_02',
+          'position_03','position_04'] 
+
+shape = ['shape_00','shape_01','shape_02','shape_03','shape_04','shape_05','shape_06','shape_07']
+classes = shape
 
 
 for label in classes:
     # Load Video
     fn = label
-    class_name = label[-2:] # only the number of the video
-    cap = cv2.VideoCapture(os.path.join('..', '..', 'data', 'training_videos', f'{fn}.mp4'))
-    cap.set(3,640)
-    cap.set(4,480)
+    class_name = label # name of the video
+    cap = cv2.VideoCapture(os.path.join('..', 'data', 'training_videos', f'{fn}.mp4'))
+    cap.set(3,640) #camera width
+    cap.set(4,480) #camera hight
     n_frames = int(cap. get(cv2. CAP_PROP_FRAME_COUNT))
 
 
