@@ -8,6 +8,7 @@ Created on Wed Jun 22 11:23:06 2022
 import pandas as pd
 import os
 import numpy as np
+from utils import extract_features
 
 # open csv with all the coords
 df1 = pd.read_csv(os.path.join('..', 'output', 'all_the_coords_positions.csv'))

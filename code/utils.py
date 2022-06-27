@@ -10,12 +10,13 @@ import cv2 # Import opencv
 import os
 import csv
 import numpy as np
-
+import pandas as pd
+from tqdm import tqdm 
 
 def load_model(filename):
     with open(filename, 'rb') as f:
-        model = pickle.load(f)
-    return model
+        model, feature_names = pickle.load(f)
+    return model, feature_names
 
 def load_video(path2file):
     cap = cv2.VideoCapture(path2file)
@@ -23,12 +24,12 @@ def load_video(path2file):
     cap.set(4,480) # camera height
     return cap
 
-def extract_coordinates(cap, fn_out, args):
+def extract_coordinates(cap, fn_video, args):
     mp_drawing = mp.solutions.drawing_utils # Drawing helpers
     mp_holistic = mp.solutions.holistic # Mediapipe Solutions
     
     
-    coords_file = os.path.join(args.path2output, f'{fn_out}_all_coords.csv.csv')
+    coords_file = os.path.join(args.path2output, f'{fn_video}_all_coords.csv.csv')
     
     with open(coords_file, mode='w', newline='') as f: 
         csv_writer = csv.writer(f, delimiter=',', quotechar='"',
@@ -115,16 +116,12 @@ def extract_coordinates(cap, fn_out, args):
                 r_hand_row = list(np.array([[landmark.x, landmark.y, landmark.z,
                                              landmark.visibility] for landmark in r_hand]).flatten())
 
-               # Extract Pose landmarks
-                pose = results.pose_landmarks.landmark
-                pose_row = list(np.array([[landmark.x, landmark.y, landmark.z,
-                                           landmark.visibility] for landmark in pose]).flatten())
+              
                 
                 #Create the row that will be written in the file
                 row = face_row+r_hand_row
 
-                # Append class name 
-                row.insert(0, class_name)
+             
 
                 # Export to CSV
                 with open(coords_file, mode='a', newline='') as f:
@@ -142,7 +139,6 @@ def extract_coordinates(cap, fn_out, args):
     cap.release()
     cv2.destroyAllWindows()
  
-    
     
     
 def extract_features(coords_file):
@@ -219,14 +215,11 @@ def extract_features(coords_file):
     for j in delta_triplets:
         df_features[j[3]] = normalized_coords_distance(df_features,j[0],j[1],j[2])
     
-        
-    
-    # extract the df to a csv file
-    df_features.to_csv(os.path.join(args.path2output, f'{fn}_features.csv'))
-    
+
+    return df_features
 
     
-def compute_predictions(model_name, csv_features[pick_position_features]):
+def compute_predictions(model_name, csv_features):
     model = load_model(model_name) #load pkl file
     # Make Detections
     X = pd.read_csv(csv_features) #not sure how to implement the "pick_position_features"
@@ -237,9 +230,6 @@ def compute_predictions(model_name, csv_features[pick_position_features]):
     X['predicted_class'] = predicted_class
     X['predicted_probability'] = predicted_prob
 
-    
-    # Export to CSV
-    X.to_csv(os.path.join(args.path2output, f'{csv_features}_predicted.csv'))
-
+    return X
  
  
