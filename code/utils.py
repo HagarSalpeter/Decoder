@@ -24,35 +24,27 @@ def load_video(path2file):
     cap.set(4,480) # camera height
     return cap
 
-def extract_coordinates(cap, fn_video, args):
+def extract_coordinates(cap, show_video=False):
+    
+    
     mp_drawing = mp.solutions.drawing_utils # Drawing helpers
     mp_holistic = mp.solutions.holistic # Mediapipe Solutions
     
     
-    coords_file = os.path.join(args.path2output, f'{fn_video}_all_coords.csv.csv')
-    
-    with open(coords_file, mode='w', newline='') as f: 
-        csv_writer = csv.writer(f, delimiter=',', quotechar='"',
-                                quoting=csv.QUOTE_MINIMAL)
-    
-    col_names = ['class']
+    columns = ['fn_video', 'frame_number']
     num_coords_face = 468
     num_coords_hand = 21
     
     # generate columns names
     for val in range(0, num_coords_face):
-        col_names += ['x_face{}'.format(val), 'y_face{}'.format(val),
+        columns += ['x_face{}'.format(val), 'y_face{}'.format(val),
                       'z_face{}'.format(val), 'v_face{}'.format(val)]
     
     for val in range(0, num_coords_hand):
-        col_names += ['x_r_hand{}'.format(val), 'y_r_hand{}'.format(val),
+        columns += ['x_r_hand{}'.format(val), 'y_r_hand{}'.format(val),
                       'z_r_hand{}'.format(val), 'v_r_hand{}'.format(val)]
     
-    with open(coords_file, mode='a', newline='') as f:
-        csv_writer = csv.writer(f, delimiter=',', quotechar='"',
-                                quoting=csv.QUOTE_MINIMAL)
-        csv_writer.writerow(col_names)
-
+    df_coords = pd.DataFrame(columns=columns)
 
     # Load Video
     #fn_video = os.path.join(args.path2data, f'{label}.mp4')
@@ -63,13 +55,14 @@ def extract_coordinates(cap, fn_video, args):
     pbar = tqdm(total=n_frames)
 
     # Initiate holistic model
-    # i_frame = 0
+    i_frame = 0
+    
     with mp_holistic.Holistic(min_detection_confidence=0.5,
                               min_tracking_confidence=0.5) as holistic:
         
         while cap.isOpened():
             ret, frame = cap.read()
-            # i_frame += 1
+            i_frame += 1
             #print(f'{i_frame}/{n_frames}')
             if not ret:
                 break
@@ -85,7 +78,7 @@ def extract_coordinates(cap, fn_video, args):
 
             
             # 4. Pose Detections
-            if args.show_video:
+            if show_video:
                 # Draw face landmarks
                 mp_drawing.draw_landmarks(image, results.face_landmarks, mp_holistic.FACEMESH_TESSELATION, 
                                          mp_drawing.DrawingSpec(color=(80,110,10), thickness=1, circle_radius=1),
@@ -122,11 +115,11 @@ def extract_coordinates(cap, fn_video, args):
                 row = face_row+r_hand_row
 
              
-
+                df_coords.append([fn_video, i_frame] + row)
                 # Export to CSV
-                with open(coords_file, mode='a', newline='') as f:
-                    csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                    csv_writer.writerow(row)
+                # with open(coords_file, mode='a', newline='') as f:
+                #     csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                #     csv_writer.writerow(row)
 
             except:
                 pass
@@ -138,6 +131,8 @@ def extract_coordinates(cap, fn_video, args):
             
     cap.release()
     cv2.destroyAllWindows()
+    
+    return df_coords
  
     
     
