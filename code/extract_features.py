@@ -72,10 +72,25 @@ for pair in pairs:
     for name in names:
         features_pairs.append([name+pair[0], name+pair[1]])
     
-    
+#get delta features
+deltas =[]    
 for i in features_pairs:
     df_features[f'd_{i[0]}_{i[1]}'] = normalized_axis_distance(df_features,i[0],i[1])
+    deltas.append(f'd_{i[0]}_{i[1]}')
 
+delta_triplets = [['d_x_r_hand8_x_r_hand5', 'd_y_r_hand8_y_r_hand5', 'd_z_r_hand8_z_r_hand5','d_r_hand8_r_hand5'],
+                  ['d_x_r_hand12_x_r_hand9', 'd_y_r_hand12_y_r_hand9', 'd_z_r_hand12_z_r_hand9','d_r_hand12_r_hand9'],
+                  ['d_x_r_hand16_x_r_hand13', 'd_y_r_hand16_y_r_hand13', 'd_z_r_hand16_z_r_hand13','d_r_hand16_r_hand13'], 
+                  ['d_x_r_hand17_x_r_hand20', 'd_y_r_hand17_y_r_hand20', 'd_z_r_hand17_z_r_hand20','d_r_hand17_r_hand20'], 
+                  ['d_x_r_hand4_x_r_hand6', 'd_y_r_hand4_y_r_hand6', 'd_z_r_hand4_z_r_hand6','d_r_hand4_r_hand6'],
+                  ['d_x_r_hand3_x_r_hand5', 'd_y_r_hand3_y_r_hand5', 'd_z_r_hand3_z_r_hand5','d_r_hand3_r_hand5'],
+                  ['d_x_r_hand8_x_r_hand12', 'd_y_r_hand8_y_r_hand12', 'd_z_r_hand8_z_r_hand12','d_r_hand8_r_hand12']]
+
+#get distance features
+for j in delta_triplets:
+    df_features[j[3]] = normalized_coords_distance(df_features,j[0],j[1],j[2])
+
+    
 
 # extract the df to a csv file
 df_features.to_csv(os.path.join('..', 'output', 'training_features.csv'))
