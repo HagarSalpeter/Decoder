@@ -1,14 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 import argparse
-import mediapipe as mp # Import mediapipe
-import cv2 # Import opencv
 import os
-import csv
-import numpy as np
-from tqdm import tqdm
 import pandas as pd
-from utils import extract_coordinates, extract_features
+from utils import extract_coordinates
 from utils import load_video
 
 parser = argparse.ArgumentParser()
@@ -29,11 +24,11 @@ classes_list = [positions_list, shapes_list]
 
 df = pd.DataFrame()
 
-for lst in classes_list:
-    classes = lst
-
-    for fn in classes:
-        cap = load_video(fn)
-        df_coords = extract_coordinates(cap)
+for fn_videos in classes_list:
+    for fn_video in fn_videos:
+        fn_video = os.path.join(args.path2data, fn_video+'.mp4')
+        print(f'Extracting coordinates from: {fn_video}')
+        cap = load_video(fn_video)
+        df_coords = extract_coordinates(cap, os.path.basename(fn_video))
         df = pd.concat([df,df_coords])
 

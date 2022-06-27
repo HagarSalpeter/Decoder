@@ -24,7 +24,7 @@ def load_video(path2file):
     cap.set(4,480) # camera height
     return cap
 
-def extract_coordinates(cap, show_video=False):
+def extract_coordinates(cap, fn_video, show_video=False):
     
     
     mp_drawing = mp.solutions.drawing_utils # Drawing helpers
@@ -46,17 +46,11 @@ def extract_coordinates(cap, show_video=False):
     
     df_coords = pd.DataFrame(columns=columns)
 
-    # Load Video
-    #fn_video = os.path.join(args.path2data, f'{label}.mp4')
-    ##cap = cv2.VideoCapture(fn_video)
-    #cap.set(3,640) # camera width
-    #cap.set(4,480) # camera height
     n_frames = int(cap. get(cv2. CAP_PROP_FRAME_COUNT))
     pbar = tqdm(total=n_frames)
 
     # Initiate holistic model
     i_frame = 0
-    
     with mp_holistic.Holistic(min_detection_confidence=0.5,
                               min_tracking_confidence=0.5) as holistic:
         
@@ -97,9 +91,11 @@ def extract_coordinates(cap, show_video=False):
                                           )
                 cv2.imshow('cued_estimated', image)
 
+            
             # Export coordinates
             try:
                 # Extract Face landmarks
+                
                 face = results.face_landmarks.landmark
                 face_row = list(np.array([[landmark.x, landmark.y, landmark.z,
                                            landmark.visibility] for landmark in face]).flatten())
@@ -112,14 +108,9 @@ def extract_coordinates(cap, show_video=False):
               
                 
                 #Create the row that will be written in the file
-                row = face_row+r_hand_row
-
-             
-                df_coords.append([fn_video, i_frame] + row)
-                # Export to CSV
-                # with open(coords_file, mode='a', newline='') as f:
-                #     csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                #     csv_writer.writerow(row)
+                row = [fn_video, i_frame] + face_row +r_hand_row
+                df_coords = df_coords.append(dict(zip(columns, row)),
+                                             ignore_index=True)
 
             except:
                 pass
