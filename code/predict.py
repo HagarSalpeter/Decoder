@@ -5,8 +5,14 @@ Created on Fri Jun 24 11:36:16 2022
 @author: hagar
 """
 
-imports...
-argparse part...(args variable containing all user choices)
+import argparse
+import os
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--test-video', default='test1.avi')
+parser.add_argument('--path2models', default='')
+parser.add_argument('--path2test_videos', default='')
+args = parser.parse_args()
 
 # MODELS
 fn = f'trained_rf_position'
@@ -17,15 +23,14 @@ fn = os.path.join(args.path2models, fn)
 model_shape = load_model(fn)
 
 # INPUT VIDEO
-fn_video = 'test1.avi'
-fn_video = os.path.join(args.path2test_videos, fn_video)
+fn_video = os.path.join(args.path2test_videos, args.test_video)
 cap = load_video(fn_video)
 csv_coords = extract_coordinates(cap)
 csv_features = extract_features(csv_coord)
 
 # PREDICT
-predictions_position, accuracy_position = compute_predictions(model_position, csv_features[pick_position_features])
-predictions_shape, accuracy_shape = compute_predictions(model_shape, csv_features[pick_shape_features])
+compute_predictions(model_position, csv_features[pick_position_features])
+print(f'csv file with predictions was saved to {}')
+compute_predictions(model_shape, csv_features[pick_shape_features])
+print(f'csv file with predictions was saved to {}')
 
-# SAVE STUFF..
-# need to see how to merge both files
