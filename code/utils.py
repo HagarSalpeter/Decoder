@@ -23,12 +23,12 @@ def load_video(path2file):
     cap.set(4,480) # camera height
     return cap
 
-def extract_coordinates(fn):
+def extract_coordinates(cap, fn_out, args):
     mp_drawing = mp.solutions.drawing_utils # Drawing helpers
     mp_holistic = mp.solutions.holistic # Mediapipe Solutions
     
     
-    coords_file = os.path.join(args.path2output, f'{fn}_all_coords.csv.csv')
+    coords_file = os.path.join(args.path2output, f'{fn_out}_all_coords.csv.csv')
     
     with open(coords_file, mode='w', newline='') as f: 
         csv_writer = csv.writer(f, delimiter=',', quotechar='"',
@@ -54,10 +54,10 @@ def extract_coordinates(fn):
 
 
     # Load Video
-    fn_video = os.path.join(args.path2data, f'{label}.mp4')
-    cap = cv2.VideoCapture(fn_video)
-    cap.set(3,640) # camera width
-    cap.set(4,480) # camera height
+    #fn_video = os.path.join(args.path2data, f'{label}.mp4')
+    ##cap = cv2.VideoCapture(fn_video)
+    #cap.set(3,640) # camera width
+    #cap.set(4,480) # camera height
     n_frames = int(cap. get(cv2. CAP_PROP_FRAME_COUNT))
     pbar = tqdm(total=n_frames)
 

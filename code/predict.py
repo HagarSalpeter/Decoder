@@ -9,11 +9,17 @@ imports...
 argparse part...(args variable containing all user choices)
 
 # MODELS
-model_position = load_model(args.path2models, 'position', ...)
-model_shape = load_model(args.path2models, 'shape', ...)
+fn = f'trained_rf_position'
+fn = os.path.join(args.path2models, fn)
+model_position = load_model(fn)
+fn = f'trained_rf_shape'
+fn = os.path.join(args.path2models, fn)
+model_shape = load_model(fn)
 
 # INPUT VIDEO
-cap = load_video(args.path2...)
+fn_video = 'test1.avi'
+fn_video = os.path.join(args.path2test_videos, fn_video)
+cap = load_video(fn_video)
 csv_coords = extract_coordinates(cap)
 csv_features = extract_features(csv_coord)
 
