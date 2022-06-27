@@ -9,7 +9,7 @@ import numpy as np
 from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--show-video', action='store_true', default=False)
+parser.add_argument('--show-video', action='store_true', default=True)
 parser.add_argument('--path2data', default=os.path.join('..', 'data',
                                                         'training_videos'))
 parser.add_argument('--path2output', default=os.path.join('..', 'output'))
