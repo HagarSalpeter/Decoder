@@ -16,50 +16,71 @@ from sklearn.linear_model import LogisticRegression, RidgeClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.metrics import accuracy_score # Accuracy metrics 
 import pickle # file to save the trained model
+import os
 
 
 
-df = pd.read_csv(os.path.join('..', '..', 'data', 'training_features.csv'))
-
+df = pd.read_csv(os.path.join('..', 'output', 'training_features.csv'))
+df.drop('Unnamed: 0', axis=1)
 # Separate the features from the target
-X = df.drop('class', axis=1) # features
-y = df['class'] # target value
+# features for position: 
+pos_features = ['class','d_x_face0_r_hand0','d_y_face0_r_hand0','d_z_face0_r_hand0',
+                'distance_face0_r_hand0','tan_alpha_pose']
+# features for shape: 
+shape_features = ['class','d_x_r_hand8_x_r_hand5', 'd_y_r_hand8_y_r_hand5', 'd_z_r_hand8_z_r_hand5','d_r_hand8_r_hand5',
+                  'd_x_r_hand12_x_r_hand9', 'd_y_r_hand12_y_r_hand9', 'd_z_r_hand12_z_r_hand9','d_r_hand12_r_hand9',
+                  'd_x_r_hand16_x_r_hand13', 'd_y_r_hand16_y_r_hand13', 'd_z_r_hand16_z_r_hand13','d_r_hand16_r_hand13', 
+                  'd_x_r_hand17_x_r_hand20', 'd_y_r_hand17_y_r_hand20', 'd_z_r_hand17_z_r_hand20','d_r_hand17_r_hand20', 
+                  'd_x_r_hand4_x_r_hand6', 'd_y_r_hand4_y_r_hand6', 'd_z_r_hand4_z_r_hand6','d_r_hand4_r_hand6',
+                  'd_x_r_hand3_x_r_hand5', 'd_y_r_hand3_y_r_hand5', 'd_z_r_hand3_z_r_hand5','d_r_hand3_r_hand5',
+                  'd_x_r_hand8_x_r_hand12', 'd_y_r_hand8_y_r_hand12', 'd_z_r_hand8_z_r_hand12','d_r_hand8_r_hand12']
 
+#run the pipline once for shape and once for pose
+features_lists = [pos_features, shape_features] 
+names = ['position','shape']
 
-
-# Split the data to train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1234)
-
-
-
-# Train train different Classification Model
-
-# Use different classifiers and see what works best
-pipelines = {
-    'lr':make_pipeline(StandardScaler(), LogisticRegression()),
-    'rc':make_pipeline(StandardScaler(), RidgeClassifier()),
-    'rf':make_pipeline(StandardScaler(), RandomForestClassifier()),
-    'gb':make_pipeline(StandardScaler(), GradientBoostingClassifier()),
-}
-
-
-
-# fit the models with the pipelines
-fit_models = {}
-for algo, pipeline in pipelines.items():
-    model = pipeline.fit(X_train, y_train)
-    fit_models[algo] = model
-
-
-
-# Evaluate and Serialize Model 
-
-for algo, model in fit_models.items():
-    yhat = model.predict(X_test)
-    print(algo, accuracy_score(y_test, yhat))
-
-
-# Put the trained model in a pkl file
-file_name = os.path.join('trained_rf.pkl')
-with open(file_name, 'wb') as f:
-    pickle.dump(fit_models['rf'], f)
+for i in range (len(features_lists)):
+    name =  names[i]     
+    X = df[features_lists[i]]# features
+    X = df[df['class'].str.contains(name, regex=False)]
+    #X = df.loc[(df['class'][:-3]==name)] #take only relevant rows
+    y = X['class'] # target value
+    X = X.drop(['class', 'Unnamed: 0'], axis=1)
+    
+    
+    
+    # Split the data to train and test sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
+                                                        random_state=1234)
+    
+    
+    
+    # Train different Classification Model
+    
+    # Use different classifiers and see what works best
+    pipelines = {
+        #'lr':make_pipeline(StandardScaler(), LogisticRegression()),
+        'rc':make_pipeline(StandardScaler(), RidgeClassifier()),
+        'rf':make_pipeline(StandardScaler(), RandomForestClassifier()),
+        'gb':make_pipeline(StandardScaler(), GradientBoostingClassifier()),
+    }
+    
+    # fit the models with the pipelines
+    fit_models = {}
+    for algo, pipeline in pipelines.items():
+        model = pipeline.fit(X_train, y_train)
+        fit_models[algo] = model
+    
+    
+    
+    # Evaluate and Serialize Model 
+    
+    for algo, model in fit_models.items():
+        yhat = model.predict(X_test)
+        print(algo, accuracy_score(y_test, yhat))
+    
+    
+    # Put the trained model in a pkl file
+    file_name = os.path.join(f'trained_rf_{name}.pkl')
+    with open(file_name, 'wb') as f:
+        pickle.dump(fit_models['rf'], f)
