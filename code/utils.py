@@ -127,12 +127,10 @@ def extract_coordinates(cap, fn_video, show_video=False):
  
     
     
-def extract_features(coords_file):
-    df = pd.read_csv(os.path.join(args.path2input, coords_file))
-
+def extract_features(df_coords):
     #create the df of relevant feature
     
-    df_features = df[['x_face0','y_face0','z_face0',
+    df_features = df_coords[['x_face0','y_face0','z_face0',
                       'x_face234','y_face234','z_face234',
                       'x_face454','y_face454','z_face454',
                       'x_r_hand0','y_r_hand0','z_r_hand0',
@@ -215,6 +213,15 @@ def compute_predictions(model_name, csv_features):
     # Append prediction class and probability
     X['predicted_class'] = predicted_class
     X['predicted_probability'] = predicted_prob
+    
+    # shift column 'predicted_class' and 'predicted_probability' to first position
+    first_column = X.pop('predicted_class')
+    second_column = X.pop('predicted_probability')
+      
+    # insert column using insert(position,column_name,
+    # first_column) function
+    X.insert(0, 'predicted_class', first_column)
+    X.insert(1, 'predicted_probability', second_column)
 
     return X
  

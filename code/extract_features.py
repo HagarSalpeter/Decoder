@@ -11,17 +11,12 @@ import numpy as np
 from utils import extract_features
 
 # open csv with all the coords
-df1 = pd.read_csv(os.path.join('..', 'output', 'all_the_coords_positions.csv'))
-df2 = pd.read_csv(os.path.join('..', 'output', 'all_the_coords_shapes.csv'))
-
-
-
-df = pd.concat([df1,df2])
+df = pd.read_csv(os.path.join('..', 'output', 'all_coords_face_hand.csv'))
 
 
 #create the df of relevant feature
 
-df_features = df[['class',
+df_features = df[['fn_video','frame_number',
                   'x_face0','y_face0','z_face0',
                   'x_face234','y_face234','z_face234',
                   'x_face454','y_face454','z_face454',

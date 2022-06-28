@@ -11,7 +11,7 @@ from utils import extract_coordinates, extract_features
 from utils import compute_predictions, load_model, load_video 
 
 parser = argparse.ArgumentParser()
-parser.add_argumenbt('--model-name', default='trained_rf_position')
+parser.add_argument('--model-name', default='trained_rf_position')
 parser.add_argument('--test-video', default='test.mp4')
 parser.add_argument('--path2models',
                     default=os.path.join('..', 'trained_models')) 
@@ -32,7 +32,7 @@ fn_video = os.path.join(args.path2test_videos, args.test_video)
 cap = load_video(fn_video)
 
 # COORDINATES
-extract_coordinates(cap)
+extract_coordinates(cap,fn_video)
 fn_csv_coords = os.path.join(args.path2output, f'{fn_video}_all_coords.csv.csv')
     
 # FEATURES

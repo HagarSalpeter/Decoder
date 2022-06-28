@@ -28,10 +28,10 @@ df = pd.read_csv(os.path.join('..', 'output', 'training_features.csv'))
 df.drop('Unnamed: 0', axis=1)
 # Separate the features from the target
 # features for position: 
-pos_features = ['class','d_x_face0_r_hand0','d_y_face0_r_hand0','d_z_face0_r_hand0',
+pos_features = ['fn_video','d_x_face0_r_hand0','d_y_face0_r_hand0','d_z_face0_r_hand0',
                 'distance_face0_r_hand0','tan_alpha_pose']
 # features for shape: 
-shape_features = ['class','d_x_r_hand8_x_r_hand5', 'd_y_r_hand8_y_r_hand5', 'd_z_r_hand8_z_r_hand5','d_r_hand8_r_hand5',
+shape_features = ['fn_video','d_x_r_hand8_x_r_hand5', 'd_y_r_hand8_y_r_hand5', 'd_z_r_hand8_z_r_hand5','d_r_hand8_r_hand5',
                   'd_x_r_hand12_x_r_hand9', 'd_y_r_hand12_y_r_hand9', 'd_z_r_hand12_z_r_hand9','d_r_hand12_r_hand9',
                   'd_x_r_hand16_x_r_hand13', 'd_y_r_hand16_y_r_hand13', 'd_z_r_hand16_z_r_hand13','d_r_hand16_r_hand13', 
                   'd_x_r_hand17_x_r_hand20', 'd_y_r_hand17_y_r_hand20', 'd_z_r_hand17_z_r_hand20','d_r_hand17_r_hand20', 
@@ -46,10 +46,10 @@ feature_lists = {'position':pos_features,
 feature_names = feature_lists[args.property_type] 
    
 X = df[feature_names]# features
-X = df[df['class'].str.contains(args.property_type, regex=False)]
+X = df[df['fn_video'].str.contains(args.property_type, regex=False)]
 #X = df.loc[(df['class'][:-3]==name)] #take only relevant rows
-y = X['class'] # target value
-X = X.drop(['class', 'Unnamed: 0'], axis=1)
+y = X['fn_video'] # target value
+X = X.drop(['fn_video', 'Unnamed: 0'], axis=1)
 
 
 
