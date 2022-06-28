@@ -12,7 +12,7 @@ parser.add_argument('--path2data', default=os.path.join('..', 'data',
                                                         'training_videos'))
 parser.add_argument('--path2output', default=os.path.join('..', 'output'))
 args = parser.parse_args()
-    
+file_name = 'all_coords_face_hand.csv'    
 
 positions_list = ['position_00','position_01','position_02',
           'position_03','position_04'] 
@@ -32,3 +32,4 @@ for fn_videos in classes_list:
         df_coords = extract_coordinates(cap, os.path.basename(fn_video))
         df = pd.concat([df,df_coords])
 
+df.to_csv(str((args.path2output+'\\'+file_name)))
