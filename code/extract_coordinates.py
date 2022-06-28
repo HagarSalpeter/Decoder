@@ -32,4 +32,4 @@ for fn_videos in classes_list:
         df_coords = extract_coordinates(cap, os.path.basename(fn_video))
         df = pd.concat([df,df_coords])
 
-df.to_csv(str((args.path2output+'\\'+file_name)))
+df.to_csv(os.path.join(args.path2output, file_name))

@@ -129,7 +129,6 @@ def extract_coordinates(cap, fn_video, show_video=False):
     
 def extract_features(df_coords):
     #create the df of relevant feature
-    
     df_features = df_coords[['x_face0','y_face0','z_face0',
                       'x_face234','y_face234','z_face234',
                       'x_face454','y_face454','z_face454',
@@ -152,6 +151,8 @@ def extract_features(df_coords):
     
     def coords_distance(df_name,d_x,d_y,d_z):
         return np.sqrt((df_name[d_x])**2 + (df_features[d_y])**2 + (df_features[d_z])**2)
+    
+    df_features['fn_video'] = df_coords['fn_video']
     
     #face width to normalize the distance
     df_features['face_width_x'] = axis_distance(df_features,'x_face234','x_face454')
@@ -202,27 +203,34 @@ def extract_features(df_coords):
 
     return df_features
 
-    
-def compute_predictions(model_name, csv_features):
-    model = load_model(model_name) #load pkl file
-    # Make Detections
-    X = pd.read_csv(csv_features) #not sure how to implement the "pick_position_features"
-    predicted_class = model.predict(X)[0]
-    predicted_prob = model.predict_proba(X)[0]
-    
-    # Append prediction class and probability
-    X['predicted_class'] = predicted_class
-    X['predicted_probability'] = predicted_prob
-    
-    # shift column 'predicted_class' and 'predicted_probability' to first position
-    first_column = X.pop('predicted_class')
-    second_column = X.pop('predicted_probability')
-      
-    # insert column using insert(position,column_name,
-    # first_column) function
-    X.insert(0, 'predicted_class', first_column)
-    X.insert(1, 'predicted_probability', second_column)
 
-    return X
+def get_feature_names(property_name):
+    if property_name == 'position':
+        feature_names = ['d_x_face0_r_hand0','d_y_face0_r_hand0','d_z_face0_r_hand0',
+                         'distance_face0_r_hand0','tan_alpha_pose']
+    elif property_name == 'shape':
+        feature_names = ['d_x_r_hand8_x_r_hand5', 'd_y_r_hand8_y_r_hand5', 'd_z_r_hand8_z_r_hand5','d_r_hand8_r_hand5',
+                         'd_x_r_hand12_x_r_hand9', 'd_y_r_hand12_y_r_hand9', 'd_z_r_hand12_z_r_hand9','d_r_hand12_r_hand9',
+                         'd_x_r_hand16_x_r_hand13', 'd_y_r_hand16_y_r_hand13', 'd_z_r_hand16_z_r_hand13','d_r_hand16_r_hand13',
+                         'd_x_r_hand17_x_r_hand20', 'd_y_r_hand17_y_r_hand20', 'd_z_r_hand17_z_r_hand20','d_r_hand17_r_hand20',
+                         'd_x_r_hand4_x_r_hand6', 'd_y_r_hand4_y_r_hand6', 'd_z_r_hand4_z_r_hand6','d_r_hand4_r_hand6',
+                         'd_x_r_hand3_x_r_hand5', 'd_y_r_hand3_y_r_hand5', 'd_z_r_hand3_z_r_hand5','d_r_hand3_r_hand5',
+                         'd_x_r_hand8_x_r_hand12', 'd_y_r_hand8_y_r_hand12', 'd_z_r_hand8_z_r_hand12','d_r_hand8_r_hand12']
+    return feature_names
+
+
+
+    
+def compute_predictions(model, df_features):
+    #model = load_model(model_name) #load pkl file
+    # Make Detections
+    #X = pd.read_csv(csv_features) #not sure how to implement the "pick_position_features"
+    X = df_features.to_numpy()
+    print(X.shape)
+    predicted_class = model.predict(X)
+    predicted_probs = model.predict_proba(X)
+    print(predicted_probs, predicted_class)
+
+    return predicted_probs, np.asarray(predicted_class)
  
  

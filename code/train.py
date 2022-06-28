@@ -18,40 +18,27 @@ from sklearn.metrics import accuracy_score # Accuracy metrics
 import pickle # file to save the trained model
 import os
 import argparse
+from utils import get_feature_names
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--property-type', choices=['shape', 'position'],
                     default='position')
 args = parser.parse_args()
 
-df = pd.read_csv(os.path.join('..', 'output', 'training_features.csv'))
-df.drop('Unnamed: 0', axis=1)
-# Separate the features from the target
-# features for position: 
-pos_features = ['fn_video','d_x_face0_r_hand0','d_y_face0_r_hand0','d_z_face0_r_hand0',
-                'distance_face0_r_hand0','tan_alpha_pose']
-# features for shape: 
-shape_features = ['fn_video','d_x_r_hand8_x_r_hand5', 'd_y_r_hand8_y_r_hand5', 'd_z_r_hand8_z_r_hand5','d_r_hand8_r_hand5',
-                  'd_x_r_hand12_x_r_hand9', 'd_y_r_hand12_y_r_hand9', 'd_z_r_hand12_z_r_hand9','d_r_hand12_r_hand9',
-                  'd_x_r_hand16_x_r_hand13', 'd_y_r_hand16_y_r_hand13', 'd_z_r_hand16_z_r_hand13','d_r_hand16_r_hand13', 
-                  'd_x_r_hand17_x_r_hand20', 'd_y_r_hand17_y_r_hand20', 'd_z_r_hand17_z_r_hand20','d_r_hand17_r_hand20', 
-                  'd_x_r_hand4_x_r_hand6', 'd_y_r_hand4_y_r_hand6', 'd_z_r_hand4_z_r_hand6','d_r_hand4_r_hand6',
-                  'd_x_r_hand3_x_r_hand5', 'd_y_r_hand3_y_r_hand5', 'd_z_r_hand3_z_r_hand5','d_r_hand3_r_hand5',
-                  'd_x_r_hand8_x_r_hand12', 'd_y_r_hand8_y_r_hand12', 'd_z_r_hand8_z_r_hand12','d_r_hand8_r_hand12']
-
-feature_lists = {'position':pos_features,
-                 'shape':shape_features}
+df_features = pd.read_csv(os.path.join('..', 'output', 'training_features.csv'),
+                          index_col=0)
 
 #run the pipline once for shape and once for pose
-feature_names = feature_lists[args.property_type] 
-   
-X = df[feature_names]# features
-X = df[df['fn_video'].str.contains(args.property_type, regex=False)]
+feature_names = get_feature_names(args.property_type)
+print(feature_names)
+
+df_features = df_features[['fn_video'] + feature_names]# features
+df_features = df_features.loc[df_features['fn_video'].str.contains(args.property_type, regex=False)]
+print(df_features)
+print(list(df_features))
 #X = df.loc[(df['class'][:-3]==name)] #take only relevant rows
-y = X['fn_video'] # target value
-X = X.drop(['fn_video', 'Unnamed: 0'], axis=1)
-
-
+y = df_features['fn_video'] # target value
+X = df_features.drop(['fn_video'], axis=1)
 
 # Split the data to train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
@@ -65,7 +52,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
 pipelines = {
     #'lr':make_pipeline(StandardScaler(), LogisticRegression()),
     #'rc':make_pipeline(StandardScaler(), RidgeClassifier()),
-    'rf':make_pipeline(StandardScaler(), RandomForestClassifier()),
+    'rf':make_pipeline(RandomForestClassifier()),
     #'gb':make_pipeline(StandardScaler(), GradientBoostingClassifier()),
 }
 
@@ -75,13 +62,10 @@ for algo, pipeline in pipelines.items():
     model = pipeline.fit(X_train, y_train)
     fit_models[algo] = model
 
-
-
 # Evaluate and Serialize Model 
-
 for algo, model in fit_models.items():
     yhat = model.predict(X_test)
-    print(algo, accuracy_score(y_test, yhat))
+    print(f'Performance for {args.property_type}, algrorithm {algo}, is: {accuracy_score(y_test, yhat)}')
 
 
 # Put the trained model in a pkl file\

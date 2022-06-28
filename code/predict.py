@@ -7,6 +7,7 @@ Created on Fri Jun 24 11:36:16 2022
 
 import argparse
 import os
+import numpy as np
 from utils import extract_coordinates, extract_features
 from utils import compute_predictions, load_model, load_video 
 
@@ -26,27 +27,38 @@ args = parser.parse_args()
 #fn_model = f'trained_rf_{args.property_type}'
 fn_model = os.path.join(args.path2models, args.model_name + '.pkl')
 model, feature_names = load_model(fn_model)
+print(f'Loaded model: {fn_model}')
+print(f'Trained on features: {feature_names}')
 
 # INPUT VIDEO
 fn_video = os.path.join(args.path2test_videos, args.test_video)
 cap = load_video(fn_video)
+print(f'Loaded video: {fn_video}')
 
 # COORDINATES
-extract_coordinates(cap,fn_video)
-fn_csv_coords = os.path.join(args.path2output, f'{fn_video}_all_coords.csv.csv')
+df_coords = extract_coordinates(cap,fn_video)
+#fn_csv_coords = os.path.join(args.path2output, f'{fn_video}_all_coords.csv.csv')
+print('Extracted coordinates:')
+print(df_coords)
     
 # FEATURES
-df_features = extract_features(fn_csv_coords)
+df_features = extract_features(df_coords)
 if args.save_feature_csv:
     df_features.to_csv(os.path.join(args.path2output, f'{fn_video}_features.csv'))
-    
+print('Extracted features:')
+print(df_features)
+
+
 # PREDICT
-predictions = compute_predictions(model, df_features[feature_names])
+predicted_probs, predicted_classes = compute_predictions(model, df_features[feature_names])
+print(predicted_probs.shape, predicted_classes.shape)
+output = np.concatenate([predicted_probs, predicted_classes[:, None]], axis=1)
 
 # SAVE
 fn_predictions = os.path.join(args.path2output,
-                                         f'{os.path.basename(fn_model)}_{os.path.basename(fn_video)}_predicted.csv')
+        f'{os.path.basename(fn_model)[:-4]}_{os.path.basename(fn_video)[:-4]}_predicted.csv')
 
-predictions.to_csv(fn_predictions)
 print(f'csv file with predictions was saved to {fn_predictions}')
+np.savetxt(fn_predictions, output, delimiter=',')
+#predictions.to_csv(fn_predictions)
 
