@@ -161,9 +161,16 @@ def extract_features(df_coords):
         return df_name[col1] - df_name[col2]
     
     def coords_distance(df_name,d_x,d_y,d_z):
-        return np.sqrt((df_name[d_x])**2 + (df_features[d_y])**2 + (df_features[d_z])**2)
+        return np.sqrt((df_name[d_x])**2 + (df_name[d_y])**2 + (df_name[d_z])**2)
     
-    df_features['fn_video'] = df_coords['fn_video']
+    def normalized_axis_distance(df_name,col1,col2):
+        return (df_name[col1] - df_name[col2])/df_name['face_width']
+    
+    def normalized_coords_distance(df_name, d_x, d_y, d_z):
+        return (np.sqrt((df_name[d_x])**2 + (df_name[d_y])**2 + (df_name[d_z])**2))/df_name['face_width']
+    
+    
+    df_features['fn_video'] = df_coords['fn_video'].copy()
     df_features['frame_number'] = df_coords['frame_number']
     
     #face width to normalize the distance
@@ -172,11 +179,6 @@ def extract_features(df_coords):
     df_features['face_width_z'] = axis_distance(df_features,'z_face234','z_face454')
     df_features['face_width'] = coords_distance(df_features,'face_width_x','face_width_y','face_width_z')
     
-    def normalized_axis_distance(df_name,col1,col2):
-        return (df_name[col1] - df_name[col2])/df_name['face_width']
-    
-    def normalized_coords_distance(df_name,d_x,d_y,d_z):
-        return (np.sqrt((df_name[d_x])**2 + (df_features[d_y])**2 + (df_features[d_z])**2))/df_name['face_width']
     
     #features for position    
     df_features['d_x_face0_r_hand0'] = normalized_axis_distance(df_features,'x_r_hand0','x_face0')
@@ -245,102 +247,14 @@ def compute_predictions(model, df_features):
     return predicted_probs, np.asarray(predicted_class)
  
  
-
-def mark_pred_on_video(cap, fn_video,
-                       df_predictions_pos, df_predictions_shape,
-                       p_thresh=0.8,
-                       show=False):
+def compute_velocity(df, landmark):
+    dx = df['x_' + landmark].diff().values
+    dy = df['y_' + landmark].diff().values
+    dz = df['z_' + landmark].diff().values
     
-    mp_drawing = mp.solutions.drawing_utils # Drawing helpers
-    mp_holistic = mp.solutions.holistic # Mediapipe Solutions
+    v = np.sqrt(dx**2 + dy**2 + dz**2)
     
-    size = (int(cap.get(3)), int(cap.get(4)))
-    print(size)
-    marked_video = cv2.VideoWriter(f'{fn_video[:-4]}_marked.avi',
-                                   cv2.VideoWriter_fourcc(*'XVID'),30,
-                                    size)
+    from scipy.signal import savgol_filter
+    v_smoothed = savgol_filter(v, 9, 3) # window
     
-    n_frames = int(cap. get(cv2. CAP_PROP_FRAME_COUNT))
-    pbar = tqdm(total=n_frames)
-    # Initiate holistic model
-    with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-        i_frame = 0
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-            
-            # POSITION
-            predicted_class_pos = df_predictions_pos.iloc[[i_frame]]['predicted_class'].values[0]
-            predicted_probs_pos = df_predictions_pos.iloc[[i_frame]][f'p_class_{predicted_class_pos + 1}'].values[0]
-            
-            # SHAPE
-            predicted_class_shape = df_predictions_shape.iloc[[i_frame]]['predicted_class'].values[0]
-            predicted_probs_shape = df_predictions_shape.iloc[[i_frame]][f'p_class_{predicted_class_shape + 1}'].values[0]
-            
-            # Recolor Feed
-            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            results = holistic.process(image)
-            
-            # Recolor image back to BGR for rendering
-            image.flags.writeable = True   
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-            
-            # Draw face landmarks
-            mp_drawing.draw_landmarks(image, results.face_landmarks, mp_holistic.FACEMESH_TESSELATION, 
-                                     mp_drawing.DrawingSpec(color=(80,110,10), thickness=1, circle_radius=1),
-                                     mp_drawing.DrawingSpec(color=(80,256,121), thickness=1, circle_radius=1)
-                                     )
-            
-            # Right hand landmarks
-            mp_drawing.draw_landmarks(image, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
-                                     mp_drawing.DrawingSpec(color=(80,22,10), thickness=2, circle_radius=4),
-                                     mp_drawing.DrawingSpec(color=(80,44,121), thickness=2, circle_radius=2))
-            
-       
-            # Write prediction on video:
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            
-            # Get status box
-            cv2.rectangle(image, (0,0), (250, 60), (245, 117, 16), -1)
-            
-            # Display Class
-            cv2.putText(image, 'Position',
-                         (95,12), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-            if predicted_probs_pos > p_thresh:
-                cv2.putText(image, str(predicted_class_pos),
-                         (90,40), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-            
-            cv2.putText(image, 'Shape',
-                         (15,12), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-            if predicted_probs_shape > p_thresh:
-                cv2.putText(image, str(predicted_class_shape),
-                         (15,40), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-                    
-            
-            # Display Probability
-            # cv2.putText(image, 'PROB'
-            #             , (15,12), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-            # cv2.putText(image, str(round(predicted_position[np.argmax(position_prob)],2))
-            #             , (10,40), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-                
-                
-                
-            # except:
-            #     pass
-    
-            if show:
-                cv2.imshow('cued_estimated', image)
-            # print(image)
-            marked_video.write(image)
-    
-    
-            if cv2.waitKey(10) & 0xFF == ord('q'):
-                break
-            i_frame += 1
-            pbar.update(1)
-    
-    marked_video.release()
-    cap.release()
-    cv2.destroyAllWindows()
-    print("The video was successfully saved")
+    return  v_smoothed

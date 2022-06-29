@@ -24,7 +24,7 @@ parser.add_argument('--path2models',
 parser.add_argument('--path2test_videos',
                     default=os.path.join('..','data','test_videos'))
 parser.add_argument('--path2output', default=os.path.join('..', 'output')) 
-parser.add_argument('--save-feature-csv', action='store_true', default=False) 
+parser.add_argument('--save-features', action='store_true', default=False) 
 
 args = parser.parse_args()
 
@@ -42,14 +42,16 @@ print(f'Loaded video: {fn_video}')
 
 # EXTRACT COORDINATES
 print('Extracting coordinates...')
-df_coords = extract_coordinates(cap,fn_video)
+df_coords = extract_coordinates(cap, args.fn_video)
     
 # EXTRACT FEATURES
 print('Extracting features...')
 df_features = extract_features(df_coords)
-if args.save_feature_csv:
-    df_features.to_csv(os.path.join(args.path2output, f'{fn_video}_features.csv'))
-
+if args.save_features:
+    df_features.to_csv(os.path.join(args.path2output,
+                                    f'{args.fn_video[:-4]}_features.csv'))
+    print(f"Features saved to: {os.path.join(args.path2output, f'{args.fn_video[:-4]}_features.csv')}")
+    
 # PREDICT
 predicted_probs, predicted_class = compute_predictions(model,
                                                        df_features[feature_names])
