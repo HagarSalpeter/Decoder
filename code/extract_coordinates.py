@@ -29,7 +29,8 @@ for fn_videos in classes_list:
         fn_video = os.path.join(args.path2data, fn_video+'.mp4')
         print(f'Extracting coordinates from: {fn_video}')
         cap = load_video(fn_video)
-        df_coords = extract_coordinates(cap, os.path.basename(fn_video))
+        df_coords = extract_coordinates(cap, os.path.basename(fn_video),
+                                        show_video=args.show_video)
         df = pd.concat([df,df_coords])
 
 df.to_csv(os.path.join(args.path2output, file_name))
