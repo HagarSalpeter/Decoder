@@ -1,11 +1,11 @@
-# Automatic Cued-Speech Recognition (ACSR)#
+# Automatic Cued-Speech Recognition (ACSR)
 Automatic detection of hand position and shape for cued-speech recognition. The decoding is based on MediaPipe, which is used to extract skeleton landmarks for hand and face. Then decoder are trained on featurescomputed from the landmarks. Results are marked on the input video and saved as a separate file. 
 
 ## Pipeline
 To train an ACSR and test it on your video, follow the steps below:
 
-Inline-style: 
 ![alt text](https://github.com/HagarSalpeter/Decoder/data/training_videos/test_marked.png "ACSR example")
+
 [An example of ACSR on a test video](data/test_videos/test_marked.avi)
 
 1. Extract skeleton coordinates (landmarks - see below) from traing videos in `data/training_videos` and saves a csv file to `output/`:
