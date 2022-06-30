@@ -118,12 +118,12 @@ def plot_predictions(df_predictions_pos, df_predictions_shape,
     df_predictions_shape = df_predictions_shape.filter(regex=("p_class*"))
     
     probs_pos = df_predictions_pos.to_numpy()
-    probs_pos[probs_pos<thresh] = np.nan
+    # probs_pos[probs_pos<thresh] = np.nan
     ax.plot(probs_pos, ls='-', lw=2,
             label=['pos_' + s for s in df_predictions_pos.columns])
     
     probs_shape = df_predictions_shape.to_numpy()
-    probs_shape[probs_shape<thresh] = np.nan
+    # probs_shape[probs_shape<thresh] = np.nan
     ax.plot(probs_shape, ls='--', lw=2,
             label=['shape_' + s for s in df_predictions_shape.columns])
     
@@ -132,7 +132,7 @@ def plot_predictions(df_predictions_pos, df_predictions_shape,
     
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     
-    ax.set_ylim((0.7, 1.1))
+    # ax.set_ylim((0.7, 1.1))
     
     plt.subplots_adjust(right=0.8)
     
