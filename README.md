@@ -4,7 +4,7 @@ Automatic detection of hand position and shape for cued-speech recognition. The 
 ## Pipeline
 To train an ACSR and test it on your video, follow the steps below:
 
-![alt text](https://github.com/HagarSalpeter/Decoder/data/training_videos/test_marked.png "ACSR example")
+![ACSR](https://github.com/HagarSalpeter/Decoder/blob/master/data/test_videos/test_marked.png)
 
 [An example of ACSR on a test video](data/test_videos/test_marked.avi)
 
