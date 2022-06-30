@@ -16,7 +16,7 @@ To train an ACSR and test it on your video, follow the steps below:
 
    `extract_features.py`
 
-3. This step trains two separate random-field models for hand position and shape detection. The trained models are saved to `trained_models/`:
+3. This step trains two separate random-forest models for hand position and shape detection. The trained models are saved to `trained_models/`:
 
    `train.py --property-type position --model-type rf`
    `train.py --property-type shape --model-type rf`
