@@ -17,6 +17,11 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 
+def open_cartoon(fn_cartoon):
+    cartoon = cv2.imread(fn_cartoon, cv2.IMREAD_COLOR)
+    return cartoon
+
+
 def mark_pred_on_video(cap, fn_video,
                        df_predictions_pos, df_predictions_shape,
                        velocity,
@@ -84,10 +89,13 @@ def mark_pred_on_video(cap, fn_video,
                          (15,12), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
             
             if predicted_probs_pos > p_thresh and predicted_probs_shape > p_thresh and velocity[i_frame]<3e-3:
+                fn_cartoon = f'{predicted_class_pos}_{predicted_class_shape}.png' #check how wach veriable is written and make sure it matches the png name
+                car = open_cartoon(fn_cartoon)
                 cv2.putText(image, str(predicted_class_pos),
                          (90,40), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
                 cv2.putText(image, str(predicted_class_shape),
                          (15,40), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+                cv2.addWeighted(image,0, car, 0) #need to see if this is the right sytax
             
             # if predicted_probs_shape > p_thresh:
                     
