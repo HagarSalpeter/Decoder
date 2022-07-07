@@ -41,67 +41,69 @@ def mark_pred_on_video(cap, fn_video,
             ret, frame = cap.read()
             if not ret:
                 break
-            
-            # POSITION
-            predicted_class_pos = df_predictions_pos.iloc[[i_frame]]['predicted_class'].values[0]
-            predicted_probs_pos = df_predictions_pos.iloc[[i_frame]][f'p_class_{predicted_class_pos + 1}'].values[0]
-            
-            # SHAPE
-            predicted_class_shape = df_predictions_shape.iloc[[i_frame]]['predicted_class'].values[0]
-            predicted_probs_shape = df_predictions_shape.iloc[[i_frame]][f'p_class_{predicted_class_shape + 1}'].values[0]
-            
-            # Recolor Feed
-            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            results = holistic.process(image)
-            
-            # Recolor image back to BGR for rendering
-            image.flags.writeable = True   
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-            
-            # Draw face landmarks
-            mp_drawing.draw_landmarks(image, results.face_landmarks, mp_holistic.FACEMESH_TESSELATION, 
-                                     mp_drawing.DrawingSpec(color=(80,110,10), thickness=1, circle_radius=1),
-                                     mp_drawing.DrawingSpec(color=(80,256,121), thickness=1, circle_radius=1)
-                                     )
-            
-            # Right hand landmarks
-            mp_drawing.draw_landmarks(image, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
-                                     mp_drawing.DrawingSpec(color=(80,22,10), thickness=2, circle_radius=4),
-                                     mp_drawing.DrawingSpec(color=(80,44,121), thickness=2, circle_radius=2))
-            
-       
-            # Write prediction on video:
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            
-            # Get status box
-            cv2.rectangle(image, (0,0), (250, 60), (245, 117, 16), -1)
-            
-            # Display Class
-            cv2.putText(image, 'Position',
-                         (95,12), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-            
-            cv2.putText(image, 'Shape',
-                         (15,12), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-            
-            if predicted_probs_pos > p_thresh and predicted_probs_shape > p_thresh and velocity[i_frame]<3e-3:
-                cv2.putText(image, str(predicted_class_pos),
-                         (90,40), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-                cv2.putText(image, str(predicted_class_shape),
-                         (15,40), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-            
-            # if predicted_probs_shape > p_thresh:
-                    
-    
-            if show:
-                cv2.imshow('cued_estimated', image)
-            # print(image)
-            marked_video.write(image)
-    
-    
-            if cv2.waitKey(10) & 0xFF == ord('q'):
-                break
-            i_frame += 1
-            pbar.update(1)
+            try: 
+                # POSITION
+                predicted_class_pos = df_predictions_pos.iloc[[i_frame]]['predicted_class'].values[0]
+                predicted_probs_pos = df_predictions_pos.iloc[[i_frame]][f'p_class_{predicted_class_pos + 1}'].values[0]
+                
+                # SHAPE
+                predicted_class_shape = df_predictions_shape.iloc[[i_frame]]['predicted_class'].values[0]
+                predicted_probs_shape = df_predictions_shape.iloc[[i_frame]][f'p_class_{predicted_class_shape + 1}'].values[0]
+                
+                # Recolor Feed
+                image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                results = holistic.process(image)
+                
+                # Recolor image back to BGR for rendering
+                image.flags.writeable = True   
+                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+                
+                # Draw face landmarks
+                mp_drawing.draw_landmarks(image, results.face_landmarks, mp_holistic.FACEMESH_TESSELATION, 
+                                         mp_drawing.DrawingSpec(color=(80,110,10), thickness=1, circle_radius=1),
+                                         mp_drawing.DrawingSpec(color=(80,256,121), thickness=1, circle_radius=1)
+                                         )
+                
+                # Right hand landmarks
+                mp_drawing.draw_landmarks(image, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
+                                         mp_drawing.DrawingSpec(color=(80,22,10), thickness=2, circle_radius=4),
+                                         mp_drawing.DrawingSpec(color=(80,44,121), thickness=2, circle_radius=2))
+                
+           
+                # Write prediction on video:
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                
+                # Get status box
+                cv2.rectangle(image, (0,0), (250, 60), (245, 117, 16), -1)
+                
+                # Display Class
+                cv2.putText(image, 'Position',
+                             (95,12), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+                
+                cv2.putText(image, 'Shape',
+                             (15,12), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+                
+                if predicted_probs_pos > p_thresh and predicted_probs_shape > p_thresh and velocity[i_frame]<np.nanpercentile(velocity, 10):
+                    cv2.putText(image, str(predicted_class_pos),
+                             (90,40), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+                    cv2.putText(image, str(predicted_class_shape),
+                             (15,40), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+                
+                # if predicted_probs_shape > p_thresh:
+                        
+        
+                if show:
+                    cv2.imshow('cued_estimated', image)
+                # print(image)
+                marked_video.write(image)
+        
+        
+                if cv2.waitKey(10) & 0xFF == ord('q'):
+                    break
+                i_frame += 1
+                pbar.update(1)
+            except:
+                pass
     
     marked_video.release()
     cap.release()

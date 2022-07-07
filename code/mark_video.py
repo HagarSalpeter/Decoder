@@ -48,4 +48,4 @@ mark_pred_on_video(cap, fn_video,
                    df_predictions_pos, df_predictions_shape,
                    velocity,
                    show=args.show_video)
-
+print(f'The marked video was saved to: {fn_video}')
