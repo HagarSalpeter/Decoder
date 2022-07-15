@@ -21,6 +21,9 @@ import argparse
 from utils import get_feature_names
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--gender', default='male', choices=['male', 'female'])
+parser.add_argument('--cropping', default='cropped', choices=['cropped', 'non_cropped'])
+parser.add_argument('--path2features', default=os.path.join('..', 'output'))
 parser.add_argument('--property-type', choices=['shape', 'position'],
                     default='position')
 parser.add_argument('--model-type', choices=['rf', 'lr', 'rc', 'gb'],
@@ -28,7 +31,7 @@ parser.add_argument('--model-type', choices=['rf', 'lr', 'rc', 'gb'],
                     default='rf')
 args = parser.parse_args()
 
-df_features = pd.read_csv(os.path.join('..', 'output', 'training_features.csv'),
+df_features = pd.read_csv(os.path.join(args.path2features, f'training_features_{args.gender}_{args.cropping}.csv'),
                           index_col=0)
 
 #run the pipline once for shape and once for pose

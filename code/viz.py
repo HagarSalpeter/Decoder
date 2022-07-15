@@ -25,6 +25,7 @@ def open_cartoon(fn_cartoon):
 def mark_pred_on_video(cap, fn_video,
                        df_predictions_pos, df_predictions_shape,
                        velocity,
+                       velocity_thresh=0.01,
                        p_thresh=0.5,
                        show=False):
     
@@ -32,7 +33,6 @@ def mark_pred_on_video(cap, fn_video,
     mp_holistic = mp.solutions.holistic # Mediapipe Solutions
     
     size = (int(cap.get(3)), int(cap.get(4)))
-    print(size)
     marked_video = cv2.VideoWriter(f'{fn_video[:-4]}_marked.avi',
                                    cv2.VideoWriter_fourcc(*'XVID'),30,
                                     size)
@@ -45,15 +45,25 @@ def mark_pred_on_video(cap, fn_video,
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
+                print('!'*100)
                 break
             
             # POSITION
-            predicted_class_pos = df_predictions_pos.iloc[[i_frame]]['predicted_class'].values[0]
-            predicted_probs_pos = df_predictions_pos.iloc[[i_frame]][f'p_class_{predicted_class_pos + 1}'].values[0]
-            
+            curr_row_pos = df_predictions_pos[df_predictions_pos['frame_number']==i_frame]
             # SHAPE
-            predicted_class_shape = df_predictions_shape.iloc[[i_frame]]['predicted_class'].values[0]
-            predicted_probs_shape = df_predictions_shape.iloc[[i_frame]][f'p_class_{predicted_class_shape + 1}'].values[0]
+            curr_row_shape = df_predictions_shape[df_predictions_shape['frame_number']==i_frame]
+            if curr_row_shape.empty or curr_row_pos.empty:
+                i_frame += 1
+                pbar.update(1)
+                continue
+            
+            # GET PREDICTIONS
+            i_df = curr_row_shape.index
+            predicted_class_pos = curr_row_pos['predicted_class'].values[0]
+            predicted_probs_pos = curr_row_pos[f'p_class_{predicted_class_pos + 1}'].values[0]
+            
+            predicted_class_shape = curr_row_shape['predicted_class'].values[0]
+            predicted_probs_shape = curr_row_shape[f'p_class_{predicted_class_shape + 1}'].values[0]
             
             # Recolor Feed
             image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -90,7 +100,7 @@ def mark_pred_on_video(cap, fn_video,
             
             
             
-            if predicted_probs_pos > p_thresh and predicted_probs_shape > p_thresh and velocity[i_frame]<3e-3:
+            if predicted_probs_pos > p_thresh and predicted_probs_shape > p_thresh and velocity[i_df]<velocity_thresh:
                 fn_cartoon = f'pos_n{predicted_class_pos}_shape_n{predicted_class_shape}.png' 
                 fn_cartoon = os.path.join('../data/cartoons/', fn_cartoon)
                 cartoon = open_cartoon(fn_cartoon)

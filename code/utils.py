@@ -12,6 +12,7 @@ import csv
 import numpy as np
 import pandas as pd
 from tqdm import tqdm 
+import matplotlib.pyplot as plt
 
 def load_model(filename):
     with open(filename, 'rb') as f:
@@ -247,7 +248,7 @@ def compute_predictions(model, df_features):
     return predicted_probs, np.asarray(predicted_class)
  
  
-def compute_velocity(df, landmark):
+def compute_velocity(df, landmark, fn=None):
     dx = df['x_' + landmark].diff().values
     dy = df['y_' + landmark].diff().values
     dz = df['z_' + landmark].diff().values
@@ -257,4 +258,10 @@ def compute_velocity(df, landmark):
     from scipy.signal import savgol_filter
     v_smoothed = savgol_filter(v, 9, 3) # window
     
+    if fn is not None:
+        fig, ax = plt.subplots()
+        ax.plot(v_smoothed, lw=3, color='k')
+        ax.set_xlabel('Frame', fontsize=16)
+        ax.set_ylabel('Velocity', fontsize=16)
+        fig.savefig(fn + '.png')
     return  v_smoothed

@@ -14,17 +14,17 @@ from utils import compute_predictions, load_model, load_video
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--property-type', choices=['shape', 'position'],
-                    default='position')
+                    default='shape')
 parser.add_argument('--model-type', choices=['rf', 'lr', 'rc', 'gb'],
                     help = 'rf:random-forest; lr:logisitic-regrssion',
                     default='rf')
-parser.add_argument('--fn-video', default='test.mp4')
+parser.add_argument('--fn-video', default='word_h0_01.mp4')
 parser.add_argument('--path2models',
                     default=os.path.join('..', 'trained_models')) 
 parser.add_argument('--path2test_videos',
                     default=os.path.join('..','data','test_videos'))
 parser.add_argument('--path2output', default=os.path.join('..', 'output')) 
-parser.add_argument('--save-features', action='store_true', default=False) 
+parser.add_argument('--save-features', action='store_true', default=True) 
 
 args = parser.parse_args()
 

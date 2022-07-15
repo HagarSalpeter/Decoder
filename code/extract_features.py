@@ -5,13 +5,21 @@ Created on Wed Jun 22 11:23:06 2022
 @author: hagar
 """
 
+import argparse
 import pandas as pd
 import os
 import numpy as np
 from utils import extract_features
 
 # open csv with all the coords
-df = pd.read_csv(os.path.join('..', 'output', 'all_coords_face_hand.csv'))
+parser = argparse.ArgumentParser()
+parser.add_argument('--gender', default='male', choices=['male', 'female'])
+parser.add_argument('--cropping', default='cropped', choices=['cropped', 'non_cropped'])
+parser.add_argument('--path2coordinates', default=os.path.join('..', 'output'))
+args=parser.parse_args()
+
+fn_coordinates = f'all_coords_face_hand_{args.gender}_{args.cropping}.csv'
+df = pd.read_csv(os.path.join(args.path2coordinates, fn_coordinates))
 
 
 #create the df of relevant feature
@@ -89,4 +97,6 @@ for j in delta_triplets:
     
 
 # extract the df to a csv file
-df_features.to_csv(os.path.join('..', 'output', 'training_features.csv'))
+fn_features = f'training_features_{args.gender}_{args.cropping}.csv'
+df_features.to_csv(os.path.join(args.path2coordinates, fn_features))
+print(f'Data frame with features was saved to {os.path.join(args.path2coordinates, fn_features)}')
