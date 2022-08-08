@@ -35,3 +35,6 @@ To train an ACSR and test it on your video, follow the steps below:
 
 ### Landmark hand map: ###
 ![alt text](https://google.github.io/mediapipe/images/mobile/hand_landmarks.png)
+
+### Landmark face map: ###
+![alt text](https://github.com/google/mediapipe/blob/a908d668c730da128dfa8d9f6bd25d519d006692/mediapipe/modules/face_geometry/data/canonical_face_model_uv_visualization.png)

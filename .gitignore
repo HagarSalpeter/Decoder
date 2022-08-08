@@ -3,3 +3,4 @@ data/
 *.mp4
 *.avi
 *.csv
+data/training_videos/
