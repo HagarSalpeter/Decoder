@@ -4,3 +4,4 @@ data/
 *.avi
 *.csv
 data/training_videos/
+!data/test_videos/test_marked.png
