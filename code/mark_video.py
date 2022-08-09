@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--model-type', choices=['rf', 'lr', 'rc', 'gb'],
                     help = 'rf:random-forest; lr:logisitic-regrssion',
                     default='rf')
-parser.add_argument('--fn-video', default='word_h0_01.mp4')
+parser.add_argument('--fn-video', default='sent_01.mp4')
 parser.add_argument('--path2video', default=os.path.join('..', 'data',
                                                          'test_videos'))
 parser.add_argument('--path2predictions', default=os.path.join('..',
@@ -36,20 +36,26 @@ df_predictions_pos = pd.read_csv(os.path.join(args.path2predictions, fn_predicti
 fn_predictions_shape = f'predictions_{args.model_type}_shape_{args.fn_video[:-4]}.csv'
 df_predictions_shape = pd.read_csv(os.path.join(args.path2predictions, fn_predictions_shape))
 
+# LOAD COORDINATE DATAFRAME
+df_coord = pd.read_csv(os.path.join(args.path2output,
+                                    f'{args.fn_video[:-4]}_coordinates.csv'))
+
 # LOAD FEATURES
 df_features = pd.read_csv(os.path.join(args.path2output,
                                        f'{args.fn_video[:-4]}_features.csv'))
 
-velocity = compute_velocity(df_features, 'r_hand0', 
-                            fn=f'../output/velocity_{args.fn_video}')
+velocity, acceleration = compute_velocity(df_coord, 'r_hand9', 
+                                          fn=f'../output/velocity_{args.fn_video}')
    
-print(velocity.shape)
 
-print(df_predictions_pos, df_predictions_shape)
+# print(velocity.shape)
+
+# print(df_predictions_pos, df_predictions_shape)
 mark_pred_on_video(cap, fn_video,
                    df_predictions_pos, df_predictions_shape,
-                   velocity,
-                   velocity_thresh=0.01,
+                   velocity, acceleration, 
+                   velocity_thresh=0.008,
+                   acceleration_thresh=0.003,
                    p_thresh=0.5,
                    show=args.show_video)
 print(f'The marked video was saved to: {fn_video}')

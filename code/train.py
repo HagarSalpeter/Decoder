@@ -25,7 +25,7 @@ parser.add_argument('--gender', default='male', choices=['male', 'female'])
 parser.add_argument('--cropping', default='cropped', choices=['cropped', 'non_cropped'])
 parser.add_argument('--path2features', default=os.path.join('..', 'output'))
 parser.add_argument('--property-type', choices=['shape', 'position'],
-                    default='position')
+                    default='shape')
 parser.add_argument('--model-type', choices=['rf', 'lr', 'rc', 'gb'],
                     help = 'rf:random-forest; lr:logisitic-regrssion',
                     default='rf')
@@ -36,8 +36,9 @@ df_features = pd.read_csv(os.path.join(args.path2features, f'training_features_{
 
 #run the pipline once for shape and once for pose
 feature_names = get_feature_names(args.property_type)
-print(feature_names)
-
+# print('Training with the following features:')
+# print(feature_names)
+ 
 df_features = df_features[['fn_video'] + feature_names]# features
 df_features = df_features.loc[df_features['fn_video'].str.contains(args.property_type,
                                                                    regex=False)]

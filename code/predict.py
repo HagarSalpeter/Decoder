@@ -18,7 +18,7 @@ parser.add_argument('--property-type', choices=['shape', 'position'],
 parser.add_argument('--model-type', choices=['rf', 'lr', 'rc', 'gb'],
                     help = 'rf:random-forest; lr:logisitic-regrssion',
                     default='rf')
-parser.add_argument('--fn-video', default='word_h0_01.mp4')
+parser.add_argument('--fn-video', default='sent_01.mp4')
 parser.add_argument('--path2models',
                     default=os.path.join('..', 'trained_models')) 
 parser.add_argument('--path2test_videos',
@@ -33,7 +33,7 @@ fn_model = f'model_{args.model_type}_{args.property_type}.pkl'
 fn_model = os.path.join(args.path2models, fn_model)
 model, feature_names = load_model(fn_model)
 print(f'Loaded model: {fn_model}')
-print(f'Trained on features: {feature_names}')
+# print(f'Trained on features: {feature_names}')
 
 # LOAD VIDEO
 fn_video = os.path.join(args.path2test_videos, args.fn_video)
@@ -48,6 +48,8 @@ df_coords = extract_coordinates(cap, args.fn_video)
 print('Extracting features...')
 df_features = extract_features(df_coords)
 if args.save_features:
+    df_coords.to_csv(os.path.join(args.path2output,
+                                    f'{args.fn_video[:-4]}_coordinates.csv'))
     df_features.to_csv(os.path.join(args.path2output,
                                     f'{args.fn_video[:-4]}_features.csv'))
     print(f"Features saved to: {os.path.join(args.path2output, f'{args.fn_video[:-4]}_features.csv')}")
@@ -67,5 +69,5 @@ for c in range(predicted_probs.shape[1]):
 fn_predictions = f'predictions_{args.model_type}_{args.property_type}_{args.fn_video[:-4]}.csv'
 fn_predictions = os.path.join(args.path2output, fn_predictions)
 df_predictions.to_csv(fn_predictions)
-print(df_predictions)
+# print(df_predictions)
 print(f'csv file with predictions was saved to {fn_predictions}')

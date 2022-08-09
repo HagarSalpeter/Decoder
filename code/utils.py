@@ -13,6 +13,8 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm 
 import matplotlib.pyplot as plt
+from scipy.signal import savgol_filter
+
 
 def load_model(filename):
     with open(filename, 'rb') as f:
@@ -36,6 +38,49 @@ def extract_class_from_fn(fn):
     ed = fn.find('.')
     return int(fn[st:ed])
 
+
+def get_distance(df_name, landmark1, landmark2, norm_factor=None):
+    '''
+    
+
+    Parameters
+    ----------
+    df_name : TYPE
+        DESCRIPTION.
+    landmark1 : STR
+        name of first landmark (e.g., hand20)
+    landmark2 : STR
+        name of second landmark (e.g., face234)
+
+    Returns
+    -------
+    series for dataframe
+    The distance between landmark1 and landmark2
+
+    '''
+    
+    x1 = df_name[f'x_{landmark1}']
+    x2 = df_name[f'x_{landmark2}']
+    y1 = df_name[f'y_{landmark1}']
+    y2 = df_name[f'y_{landmark2}']
+    z1 = df_name[f'z_{landmark1}']
+    z2 = df_name[f'z_{landmark2}']
+    d = np.sqrt((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2)
+    
+    # NORMALIZE
+    if norm_factor is not None:
+        d /= norm_factor
+    
+    return  d
+
+def get_delta_dim(df_name, landmark1, landmark2, dim, norm_factor=None):
+    delta = df_name[f'{dim}_{landmark1}'] - df_name[f'{dim}_{landmark2}']
+    # NORMALIZE
+    if norm_factor is not None:
+        delta /= norm_factor
+    return  delta
+    
+    
 def extract_coordinates(cap, fn_video, show_video=False):
     
     
@@ -141,96 +186,101 @@ def extract_coordinates(cap, fn_video, show_video=False):
     
 def extract_features(df_coords):
     #create the df of relevant feature
-    df_features = df_coords[['x_face0','y_face0','z_face0',
-                      'x_face234','y_face234','z_face234',
-                      'x_face454','y_face454','z_face454',
-                      'x_r_hand0','y_r_hand0','z_r_hand0',
-                      'x_r_hand3','y_r_hand3','z_r_hand3',
-                      'x_r_hand4','y_r_hand4','z_r_hand4',
-                      'x_r_hand5','y_r_hand5','z_r_hand5',
-                      'x_r_hand6','y_r_hand6','z_r_hand6',
-                      'x_r_hand8','y_r_hand8','z_r_hand8',
-                      'x_r_hand9','y_r_hand9','z_r_hand9',
-                      'x_r_hand12','y_r_hand12','z_r_hand12',
-                      'x_r_hand13','y_r_hand13','z_r_hand13',
-                      'x_r_hand16','y_r_hand16','z_r_hand16',
-                      'x_r_hand17','y_r_hand17','z_r_hand17',
-                      'x_r_hand20','y_r_hand20','z_r_hand20'
-                      ]] #relevant cols
     
-    def axis_distance(df_name,col1,col2):
-        return df_name[col1] - df_name[col2]
-    
-    def coords_distance(df_name,d_x,d_y,d_z):
-        return np.sqrt((df_name[d_x])**2 + (df_name[d_y])**2 + (df_name[d_z])**2)
-    
-    def normalized_axis_distance(df_name,col1,col2):
-        return (df_name[col1] - df_name[col2])/df_name['face_width']
-    
-    def normalized_coords_distance(df_name, d_x, d_y, d_z):
-        return (np.sqrt((df_name[d_x])**2 + (df_name[d_y])**2 + (df_name[d_z])**2))/df_name['face_width']
-    
-    
+    df_features = pd.DataFrame()
     df_features['fn_video'] = df_coords['fn_video'].copy()
     df_features['frame_number'] = df_coords['frame_number']
     
     #face width to normalize the distance
-    df_features['face_width_x'] = axis_distance(df_features,'x_face234','x_face454')
-    df_features['face_width_y'] = axis_distance(df_features,'y_face234','y_face454')
-    df_features['face_width_z'] = axis_distance(df_features,'z_face234','z_face454')
-    df_features['face_width'] = coords_distance(df_features,'face_width_x','face_width_y','face_width_z')
-    
-    
-    #features for position    
-    df_features['d_x_face0_r_hand0'] = normalized_axis_distance(df_features,'x_r_hand0','x_face0')
-    df_features['d_y_face0_r_hand0'] = normalized_axis_distance(df_features,'y_r_hand0','x_face0')
-    df_features['d_z_face0_r_hand0'] = normalized_axis_distance(df_features,'z_r_hand0','z_face0')
-    df_features['distance_face0_r_hand0'] = normalized_coords_distance(df_features,'d_x_face0_r_hand0','d_y_face0_r_hand0','d_z_face0_r_hand0')
-    df_features['tan_alpha_pose'] = df_features['d_y_face0_r_hand0']/df_features['d_x_face0_r_hand0'] # tan of alpha - the angle between the face center, hand and the horizontal axis
-    
-    #features for shape
-    pairs = [('8','5'),('12','9'),('16','13'),('17','20'),('4','6'),('3','5'),('8','12')]
-    features_pairs =[]
-    names = ['x_r_hand','y_r_hand','z_r_hand']
-    
-    for pair in pairs:
-        for name in names:
-            features_pairs.append([name+pair[0], name+pair[1]])
+    # print('Computing face width for normalization')
+    face_width = get_distance(df_coords,'face234','face454').mean()
+    norm_factor = face_width
+    print(f'Face width computed for normalizaiton {face_width}')
+
+    #norm_factor = None # REMOVE NORMALIZAION
+
+    # HAND-FACE DISTANCES AS FEATURES FOR POSITION DECODING
+    position_index_pairs = get_index_pairs('position')
+    for hand_index, face_index in position_index_pairs:
+        feature_name = f'distance_face{face_index}_r_hand{hand_index}'
+        # print(f'Computing {feature_name}')
+        df_features[feature_name] = get_distance(df_coords,
+                                                  f'face{face_index}',
+                                                  f'r_hand{hand_index}',
+                                                  norm_factor=norm_factor)
         
-    #get delta features
-    deltas =[]    
-    for i in features_pairs:
-        df_features[f'd_{i[0]}_{i[1]}'] = normalized_axis_distance(df_features,i[0],i[1])
-        deltas.append(f'd_{i[0]}_{i[1]}')
-    
-    delta_triplets = [['d_x_r_hand8_x_r_hand5', 'd_y_r_hand8_y_r_hand5', 'd_z_r_hand8_z_r_hand5','d_r_hand8_r_hand5'],
-                      ['d_x_r_hand12_x_r_hand9', 'd_y_r_hand12_y_r_hand9', 'd_z_r_hand12_z_r_hand9','d_r_hand12_r_hand9'],
-                      ['d_x_r_hand16_x_r_hand13', 'd_y_r_hand16_y_r_hand13', 'd_z_r_hand16_z_r_hand13','d_r_hand16_r_hand13'], 
-                      ['d_x_r_hand17_x_r_hand20', 'd_y_r_hand17_y_r_hand20', 'd_z_r_hand17_z_r_hand20','d_r_hand17_r_hand20'], 
-                      ['d_x_r_hand4_x_r_hand6', 'd_y_r_hand4_y_r_hand6', 'd_z_r_hand4_z_r_hand6','d_r_hand4_r_hand6'],
-                      ['d_x_r_hand3_x_r_hand5', 'd_y_r_hand3_y_r_hand5', 'd_z_r_hand3_z_r_hand5','d_r_hand3_r_hand5'],
-                      ['d_x_r_hand8_x_r_hand12', 'd_y_r_hand8_y_r_hand12', 'd_z_r_hand8_z_r_hand12','d_r_hand8_r_hand12']]
-    
-    #get distance features
-    for j in delta_triplets:
-        df_features[j[3]] = normalized_coords_distance(df_features,j[0],j[1],j[2])
+        dx = get_delta_dim(df_coords,
+                            f'face{face_index}',
+                            f'r_hand{hand_index}',
+                            'x',
+                            norm_factor=norm_factor)
+        
+        dy = get_delta_dim(df_coords,
+                            f'face{face_index}',
+                            f'r_hand{hand_index}',
+                            'y',
+                            norm_factor=norm_factor)
+        
+        feature_name = f'tan_angle_face{face_index}_r_hand{hand_index}'
+        df_features[feature_name] = dx/dy
+
+    # HAND-HAND DISTANCES AS FEATURE FOR SHAPE DECODING
+    shape_index_pairs = get_index_pairs('shape')
+    for hand_index1, hand_index2 in shape_index_pairs:
+        feature_name = f'distance_r_hand{hand_index1}_r_hand{hand_index2}'
+        # print(f'Computing {feature_name}')
+        df_features[feature_name] = get_distance(df_coords,
+                                                 f'r_hand{hand_index1}',
+                                                 f'r_hand{hand_index2}',
+                                                 norm_factor=norm_factor)
     
 
     return df_features
 
 
+def get_index_pairs(property_type):
+    index_pairs = []
+    if property_type == 'shape':
+        index_pairs.extend([(2, 4), (5, 8), (9, 12), (13, 16), (17, 20),
+                            (4, 5), (4, 8),
+                            (8, 12), (7, 11), (6, 10)])
+    
+    elif property_type == 'position':
+        hand_indices = [8, 9, 12] # index and middle fingers
+                        
+        face_indices = [#0, # Middle Lips
+                        #61, # right side of lips
+                        #172, # right side down
+                        #234, # right side up
+                        130, # right corner of right eye
+                        152, # chin
+                        94 # nose                
+                        ]
+        for hand_index in hand_indices:
+            for face_index in face_indices:
+                index_pairs.append((hand_index, face_index))
+                
+    return index_pairs
+
+
 def get_feature_names(property_name):
+    feature_names = []
+    # POSITION
     if property_name == 'position':
-        feature_names = ['d_x_face0_r_hand0','d_y_face0_r_hand0','d_z_face0_r_hand0',
-                         'distance_face0_r_hand0','tan_alpha_pose']
+        position_index_pairs = get_index_pairs('position')
+        for hand_index, face_index in position_index_pairs:
+            feature_name = f'distance_face{face_index}_r_hand{hand_index}'
+            feature_names.append(feature_name)
+            feature_name = f'tan_angle_face{face_index}_r_hand{hand_index}'
+            feature_names.append(feature_name)
+    # SHAPE
     elif property_name == 'shape':
-        feature_names = ['d_x_r_hand8_x_r_hand5', 'd_y_r_hand8_y_r_hand5', 'd_z_r_hand8_z_r_hand5','d_r_hand8_r_hand5',
-                         'd_x_r_hand12_x_r_hand9', 'd_y_r_hand12_y_r_hand9', 'd_z_r_hand12_z_r_hand9','d_r_hand12_r_hand9',
-                         'd_x_r_hand16_x_r_hand13', 'd_y_r_hand16_y_r_hand13', 'd_z_r_hand16_z_r_hand13','d_r_hand16_r_hand13',
-                         'd_x_r_hand17_x_r_hand20', 'd_y_r_hand17_y_r_hand20', 'd_z_r_hand17_z_r_hand20','d_r_hand17_r_hand20',
-                         'd_x_r_hand4_x_r_hand6', 'd_y_r_hand4_y_r_hand6', 'd_z_r_hand4_z_r_hand6','d_r_hand4_r_hand6',
-                         'd_x_r_hand3_x_r_hand5', 'd_y_r_hand3_y_r_hand5', 'd_z_r_hand3_z_r_hand5','d_r_hand3_r_hand5',
-                         'd_x_r_hand8_x_r_hand12', 'd_y_r_hand8_y_r_hand12', 'd_z_r_hand8_z_r_hand12','d_r_hand8_r_hand12']
+        shape_index_pairs = get_index_pairs('shape')
+                            
+        for hand_index1, hand_index2 in shape_index_pairs:
+            feature_name = f'distance_r_hand{hand_index1}_r_hand{hand_index2}'
+            feature_names.append(feature_name)
+           
     return feature_names
 
 
@@ -249,19 +299,32 @@ def compute_predictions(model, df_features):
  
  
 def compute_velocity(df, landmark, fn=None):
-    dx = df['x_' + landmark].diff().values
-    dy = df['y_' + landmark].diff().values
-    dz = df['z_' + landmark].diff().values
+    frame_number = df['frame_number']
+    x = df['x_' + landmark].values
+    y = df['y_' + landmark].values
+    z = df['z_' + landmark].values
+    
+    dx = np.gradient(x, frame_number)
+    dy = np.gradient(y, frame_number)
+    dz = np.gradient(z, frame_number)
+    
+    dx2 = np.gradient(dx, frame_number)
+    dy2 = np.gradient(dy, frame_number)
+    dz2 = np.gradient(dz, frame_number)
     
     v = np.sqrt(dx**2 + dy**2 + dz**2)
+    a = np.sqrt(dx2**2 + dy2**2 + dz2**2)
     
-    from scipy.signal import savgol_filter
     v_smoothed = savgol_filter(v, 9, 3) # window
+    a_smoothed = savgol_filter(a, 9, 3) # window
+     
     
     if fn is not None:
         fig, ax = plt.subplots()
         ax.plot(v_smoothed, lw=3, color='k')
+        ax.plot(a_smoothed, lw=3, color='b')
         ax.set_xlabel('Frame', fontsize=16)
         ax.set_ylabel('Velocity', fontsize=16)
+        ax.set_ylim([-0.01, 0.01])
         fig.savefig(fn + '.png')
-    return  v_smoothed
+    return  v_smoothed, a_smoothed

@@ -24,8 +24,9 @@ def open_cartoon(fn_cartoon):
 
 def mark_pred_on_video(cap, fn_video,
                        df_predictions_pos, df_predictions_shape,
-                       velocity,
+                       velocity, acceleration,
                        velocity_thresh=0.01,
+                       acceleration_thresh=0.003,
                        p_thresh=0.5,
                        show=False):
     
@@ -86,40 +87,49 @@ def mark_pred_on_video(cap, fn_video,
             
        
             # Write prediction on video:
-            # font = cv2.FONT_HERSHEY_SIMPLEX
+            font = cv2.FONT_HERSHEY_SIMPLEX
             
-            # Get status box
-            # cv2.rectangle(image, (0,0), (250, 60), (245, 117, 16), -1)
+            cv2.putText(image, 'SHAPE:',
+                      (20, 550), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+            for i_shape in range(1, 9):
+                cv2.putText(image, f'p_class_{i_shape}',
+                          (20, 600+(i_shape-1)*50), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+                cv2.putText(image, str(curr_row_shape[f'p_class_{i_shape}'].values[0]),
+                          (300,600+(i_shape-1)*50), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
             
-            # # Display Class
-            # cv2.putText(image, 'Position',
-            #              (95,12), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, 'POSITION:',
+                      (20, 1050), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+            for i_pos in range(1, 6):
+                cv2.putText(image, f'p_class_{i_pos}',
+                          (20, 1100+(i_pos-1)*50), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+                cv2.putText(image, str(curr_row_pos[f'p_class_{i_pos}'].values[0]),
+                          (300,1100+(i_pos-1)*50), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
             
-            # cv2.putText(image, 'Shape',
-            #              (15,12), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+            cv2.putText(image, 'Velocity',
+                      (20, 1400), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+            cv2.putText(image, f'{velocity[i_df][0]:1.5f}',
+                      (300,1400), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+        
+            
+             
+            
+            fn_cartoon = f'pos_n{predicted_class_pos}_shape_n{predicted_class_shape}.png' 
+            fn_cartoon = os.path.join('../data/cartoons/', fn_cartoon)
+            cartoon = open_cartoon(fn_cartoon)
+            height, width, channels = cartoon.shape
+            offset = np.array((100, 80)) #top-left point from which to insert the smallest image. height first, from the top of the window
+            image[offset[0]:offset[0] + height,
+                   offset[1]:offset[1] + width] = cartoon
+
             
             
             
-            if predicted_probs_pos > p_thresh and predicted_probs_shape > p_thresh and velocity[i_df]<velocity_thresh:
-                fn_cartoon = f'pos_n{predicted_class_pos}_shape_n{predicted_class_shape}.png' 
-                fn_cartoon = os.path.join('../data/cartoons/', fn_cartoon)
-                cartoon = open_cartoon(fn_cartoon)
-                if cartoon is None:
-                    raise("Cartoon image not found")
-                # cv2.putText(image, str(predicted_class_pos),
-                #          (90,40), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-                # cv2.putText(image, str(predicted_class_shape),
-                #          (15,40), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-                
-                # cv2.addWeighted(image, alpha, cartoon, 1-alpha, 0)
-                # cartoon = image_resize(cartoon, height = 100)
-                height, width, channels = cartoon.shape
-                offset = np.array((100, 80)) #top-left point from which to insert the smallest image. height first, from the top of the window
-                image[offset[0]:offset[0] + height,
-                       offset[1]:offset[1] + width] = cartoon
-    
-                
-            # if predicted_probs_shape > p_thresh:
+            if predicted_probs_pos > p_thresh and \
+                predicted_probs_shape > p_thresh and \
+                    velocity[i_df][0]<velocity_thresh:# and \
+                        
+                        cv2.rectangle(image, (0,0), (250, 60), (245, 117, 16), -1)
+              
                     
     
             if show:

@@ -18,10 +18,10 @@ args = parser.parse_args()
 file_name = f'all_coords_face_hand_{args.gender}_{args.cropping}.csv'    
 
 positions_list = ['position_00','position_01','position_02',
-          'position_03','position_04'] 
+                  'position_03','position_04'] 
 
 shapes_list = ['shape_00','shape_01','shape_02','shape_03',
-         'shape_04','shape_05','shape_06','shape_07']
+               'shape_04','shape_05','shape_06','shape_07']
 
 classes_list = [positions_list, shapes_list]
 
