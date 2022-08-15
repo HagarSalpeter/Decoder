@@ -22,6 +22,8 @@ parser.add_argument('--path2predictions', default=os.path.join('..',
                                                                'output'))
 parser.add_argument('--path2output', default=os.path.join('..', 'output'))
 parser.add_argument('--text-factor', default=1, type=float)
+parser.add_argument('--textgrid', action='store_true', default=False,
+                    help='If true, onset from grid text will be added')
 parser.add_argument('--show-video', action='store_true', default=False)
 args = parser.parse_args()
 
@@ -59,5 +61,6 @@ mark_pred_on_video(cap, fn_video,
                    acceleration_thresh=0.003,
                    p_thresh=0.5,
                    text_factor=args.text_factor,
+                   textgrid=args.textgrid,
                    show=args.show_video)
 print(f'The marked video was saved to: {fn_video}')

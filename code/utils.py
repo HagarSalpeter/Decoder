@@ -14,7 +14,7 @@ import pandas as pd
 from tqdm import tqdm 
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
-
+import textgrids
 
 def load_model(filename):
     with open(filename, 'rb') as f:
@@ -328,3 +328,20 @@ def compute_velocity(df, landmark, fn=None):
         ax.set_ylim([-0.01, 0.01])
         fig.savefig(fn + '.png')
     return  v_smoothed, a_smoothed
+
+
+def get_phone_onsets(fn_textgrid):
+    times, labels = [], []
+
+    grid = textgrids.TextGrid(fn_textgrid)
+    phones = grid['phones']
+    for phone in phones:
+        times.append(phone.xmin) 
+        labels.append(phone.text.transcode())
+
+    return times, labels
+
+
+def get_stimulus_string(fn_stimulus):
+    s = open(fn_stimulus, 'r').readlines()
+    return s[0].strip('\n') 
