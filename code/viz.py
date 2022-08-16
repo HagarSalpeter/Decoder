@@ -15,7 +15,9 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm 
 import matplotlib.pyplot as plt
-
+from utils import get_phone_onsets
+from utils import get_stimulus_string
+from PIL import ImageFont, ImageDraw, Image
 
 def open_cartoon(fn_cartoon):
     cartoon = cv2.imread(fn_cartoon, cv2.IMREAD_COLOR)
@@ -28,8 +30,23 @@ def mark_pred_on_video(cap, fn_video,
                        velocity_thresh=0.01,
                        acceleration_thresh=0.003,
                        p_thresh=0.5,
+                       text_factor=1,
+                       textgrid=False,
                        show=False):
-    
+   
+
+    fps = int(cap.get(cv2.CAP_PROP_FPS)) # frames per second
+    if textgrid:
+        fn_base = os.path.basename(fn_video)[:-4] 
+        fn_textgrid = fn_base + '.TextGrid'
+        fn_textgrid = os.path.join('../stimuli/sentences/mfa_output', fn_textgrid)
+        times_phones, labels_phones = get_phone_onsets(fn_textgrid)
+        frames_phones = [int(t*fps) for t in times_phones]
+
+        fn_stimulus = fn_base + '.txt'
+        fn_stimulus = os.path.join('../stimuli/sentences/mfa_input', fn_stimulus)
+        str_stimulus = get_stimulus_string(fn_stimulus)
+
     mp_drawing = mp.solutions.drawing_utils # Drawing helpers
     mp_holistic = mp.solutions.holistic # Mediapipe Solutions
     
@@ -38,7 +55,9 @@ def mark_pred_on_video(cap, fn_video,
                                    cv2.VideoWriter_fourcc(*'XVID'),30,
                                     size)
     
-    n_frames = int(cap. get(cv2. CAP_PROP_FRAME_COUNT))
+
+
+    n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     pbar = tqdm(total=n_frames)
     # Initiate holistic model
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
@@ -86,51 +105,106 @@ def mark_pred_on_video(cap, fn_video,
                                      mp_drawing.DrawingSpec(color=(80,44,121), thickness=2, circle_radius=2))
             
        
-            # Write prediction on video:
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            
-            cv2.putText(image, 'SHAPE:',
-                      (20, 550), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-            for i_shape in range(1, 9):
-                cv2.putText(image, f'p_class_{i_shape}',
-                          (20, 600+(i_shape-1)*50), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-                cv2.putText(image, str(curr_row_shape[f'p_class_{i_shape}'].values[0]),
-                          (300,600+(i_shape-1)*50), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-            
-            cv2.putText(image, 'POSITION:',
-                      (20, 1050), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-            for i_pos in range(1, 6):
-                cv2.putText(image, f'p_class_{i_pos}',
-                          (20, 1100+(i_pos-1)*50), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-                cv2.putText(image, str(curr_row_pos[f'p_class_{i_pos}'].values[0]),
-                          (300,1100+(i_pos-1)*50), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-            
-            cv2.putText(image, 'Velocity',
-                      (20, 1400), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-            cv2.putText(image, f'{velocity[i_df][0]:1.5f}',
-                      (300,1400), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-        
-            
-             
-            
+            # Open Cartoon        
             fn_cartoon = f'pos_n{predicted_class_pos}_shape_n{predicted_class_shape}.png' 
             fn_cartoon = os.path.join('../data/cartoons/', fn_cartoon)
             cartoon = open_cartoon(fn_cartoon)
             height, width, channels = cartoon.shape
-            offset = np.array((100, 80)) #top-left point from which to insert the smallest image. height first, from the top of the window
+            
+            # Write prediction on video:
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            line_type = cv2.LINE_8 #LINE_AA            
+            
+            x1_box = int(50/text_factor)
+            x2_box = int(100/text_factor)
+            y1_box = int(80/text_factor)
+            y2_box = y1_box+height
+            
+            x_cartoon = int(80/text_factor)
+            y_cartoon = int(100/text_factor)
+
+            x1_text = int(x_cartoon/text_factor)
+            x2_text = int((x_cartoon+300)/text_factor)
+            dy_text = int(50/text_factor)
+            y_text = int(800/text_factor)
+            
+            offset = np.array((x_cartoon, y_cartoon)) #top-left point from which to insert the smallest image. height first, from the top of the window
             image[offset[0]:offset[0] + height,
-                   offset[1]:offset[1] + width] = cartoon
+            offset[1]:offset[1] + width] = cartoon
 
             
+            cv2.putText(image, 'SHAPE:', (x1_text, y_text),
+                        font, 1/text_factor, (255, 255, 255), 2, line_type)
+            for i_shape in range(1, 9):
+                y_text += dy_text
+                cv2.putText(image, f'p_class_{i_shape}', (x1_text, y_text),
+                            font, 1/text_factor, (255, 255, 255), 2, line_type)
+                p_class = curr_row_shape[f'p_class_{i_shape}'].values[0]
+                cv2.putText(image, str(p_class), (x2_text, y_text),
+                            font, 1/text_factor, (255, 255, 255), 2, line_type)
             
+            y_text += dy_text
+            cv2.putText(image, 'POSITION:', (x1_text, y_text),
+                        font, 1/text_factor, (255, 255, 255), 2, line_type)
+            for i_pos in range(1, 6):
+                y_text += dy_text
+                cv2.putText(image, f'p_class_{i_pos}', (x1_text, y_text),
+                            font, 1/text_factor, (255, 255, 255), 2, line_type)
+                p_class = curr_row_pos[f'p_class_{i_pos}'].values[0]
+                cv2.putText(image, str(p_class), (x2_text, y_text),
+                            font, 1/text_factor, (255, 255, 255), 2, line_type)
             
+            y_text += dy_text
+            cv2.putText(image, 'Velocity', (x1_text, y_text),
+                        font, 1/text_factor, (255, 255, 255), 2, line_type)
+            cv2.putText(image, f'{velocity[i_df][0]:1.5f}', (x2_text, y_text),
+                        font, 1/text_factor, (255, 255, 255), 2, line_type)
+       
+            # mark sentence
+            font = ImageFont.truetype("DejaVuSans.ttf", 32)
+            img_pil = Image.fromarray(image)
+            draw = ImageDraw.Draw(img_pil)
+            x_stim = 10 
+            y_stim = int(y_cartoon/3)
+            draw.text((x_stim, y_stim), str_stimulus, font=font)
+            image = np.array(img_pil)
+            
+            # Mark forced alignment
+            x_phone = int(x_cartoon + width*1.2)
+            y_phone = y_cartoon
+            if i_frame + 1 in frames_phones:
+                IX = frames_phones.index(i_frame+1)
+                label_phone = labels_phones[IX]
+                
+                font = ImageFont.truetype("DejaVuSans.ttf", 32)
+                img_pil = Image.fromarray(image)
+                draw = ImageDraw.Draw(img_pil)
+                draw.text((x_phone, y_phone), label_phone, font=font)
+                image = np.array(img_pil)
+
+            # Mark prediction
             if predicted_probs_pos > p_thresh and \
                 predicted_probs_shape > p_thresh and \
                     velocity[i_df][0]<velocity_thresh:# and \
                         
-                        cv2.rectangle(image, (0,0), (250, 60), (245, 117, 16), -1)
+                        cv2.rectangle(image, (x1_box, y1_box), (x2_box, y2_box),
+                                      (16, 255, 16), -1)
               
                     
+            # Mark onsets
+            #if np.any([i_frame > frame_phone - fps/5 and i_frame < frame_phone + fps/5 for frame_phone in frames_phones]):
+            #    is_around_phone_onsets = True
+            #else:
+            #    is_around_phone_onsets = False
+
+            #if predicted_probs_pos > 0.35 and \
+            #    predicted_probs_shape > 0.35 and \
+            #        velocity[i_df][0]<0.1 and \
+            #        is_around_phone_onsets:
+            #            font = cv2.FONT_HERSHEY_SIMPLEX
+            #            cv2.putText(image, 'ONSET', (x_phone, y_phone*2),
+            #                        font, 2/text_factor, (255, 1, 1), 2, line_type)
+
     
             if show:
                 cv2.imshow('cued_estimated', image)
