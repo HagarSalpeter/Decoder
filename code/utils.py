@@ -336,8 +336,9 @@ def get_phone_onsets(fn_textgrid):
     grid = textgrids.TextGrid(fn_textgrid)
     phones = grid['phones']
     for phone in phones:
-        times.append(phone.xmin) 
-        labels.append(phone.text.transcode())
+        if phone.text.transcode() != '':
+            times.append(phone.xmin) 
+            labels.append(phone.text.transcode())
 
     return times, labels
 

@@ -65,6 +65,6 @@ print(f'Performance for {args.property_type}, algrorithm {args.model_type}, is: 
 # Put the trained model in a pkl file\
 os.makedirs(os.path.join('..', 'trained_models'), exist_ok=True)
 file_name = os.path.join('..','trained_models',
-                         f'model_{args.model_type}_{args.property_type}.pkl')
+                         f'model_{args.model_type}_{args.property_type}_{args.gender}_{args.cropping}.pkl')
 with open(file_name, 'wb') as f:
     pickle.dump([model, feature_names], f)
